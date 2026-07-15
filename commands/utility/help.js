@@ -1,7 +1,9 @@
+const path = require('node:path');
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+/* fix autocomplete not working
+*/
 
 module.exports = {
-	category: 'utility',
 	data: new SlashCommandBuilder()
 		.setName('help')
 		.setDescription('Shows all available commands')
@@ -14,11 +16,26 @@ module.exports = {
 	async execute(interaction) {
 		const categoryFilter = interaction.options.getString('category');
 		const commands = interaction.client.commands;
+		const commandPaths = interaction.client.commandPaths;
+		const commandsRoot = path.join(__dirname, '..', '..', 'commands');
+
+		function getCommandCategory(commandName) {
+			const filePath = commandPaths?.get(commandName);
+
+			if (filePath) {
+				const relativePath = path.relative(commandsRoot, filePath);
+				const parts = relativePath.split(path.sep).filter(Boolean);
+
+				return parts[0] || 'other';
+			}
+
+			return 'other';
+		}
 
 		// Group commands by category
 		const categories = new Map();
-		for (const [name, command] of commands) {
-			const category = command.category || 'other';
+		for (const [name] of commands) {
+			const category = getCommandCategory(name);
 			if (!categories.has(category)) {
 				categories.set(category, []);
 			}

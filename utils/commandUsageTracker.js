@@ -33,11 +33,11 @@ class CommandUsageTracker {
 					});
 				}
 
-				logger.debug(`📊 Loaded ${this.stats.size} tracked commands from file`);
+				logger.debug(`Loaded ${this.stats.size} tracked commands from file`);
 			}
 		}
 		catch (error) {
-			logger.warn(`⚠️ Failed to load command stats: ${error.message}`);
+			logger.warn(`Failed to load command stats: ${error.message}`);
 		}
 	}
 
@@ -63,7 +63,7 @@ class CommandUsageTracker {
 				fs.writeFileSync(STATS_FILE, JSON.stringify(data, null, 2), 'utf8');
 			}
 			catch (error) {
-				logger.warn(`⚠️ Failed to save command stats: ${error.message}`);
+				logger.warn(`Failed to save command stats: ${error.message}`);
 			}
 		});
 	}

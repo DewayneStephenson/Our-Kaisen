@@ -5,8 +5,10 @@ const { Client, Collection, GatewayIntentBits } = require('discord.js');
 const { loadCommandsFromFolder } = require('./utils/loadCommands');
 const { validateConfig } = require('./utils/configValidator');
 const logger = require('./utils/logger');
+const RoleManager = require('./game/RoleManager');
+const LobbyManager = require('./game/LobbyManager')
 
-// Validate config.json
+// Validate config/config.json
 if (!validateConfig()) {
 	process.exit(1);
 }
@@ -55,8 +57,9 @@ const foldersPath = path.join(__dirname, 'commands');
 const loadedCommands = loadCommandsFromFolder(foldersPath);
 
 for (const { command, filePath } of loadedCommands) {
-	client.commands.set(command.data.name, command);
-	client.commandPaths.set(command.data.name, filePath);
+	const commandName = command.data.name;
+	client.commands.set(commandName, command);
+	client.commandPaths.set(commandName, filePath);
 }
 
 logger.info(`Loaded ${loadedCommands.length} commands`);
@@ -153,6 +156,10 @@ process.on('SIGINT', () => {
 // Client event handlers
 client.on('error', (error) => logger.error(`Client error: ${error.message}`));
 client.on('warn', (info) => logger.warn(`Client warning: ${info}`));
+
+//lobby initialization
+client.lobbyManager = new LobbyManager();
+client.roleManager = RoleManager;
 
 // Login with error handling
 client.login(process.env.TOKEN)

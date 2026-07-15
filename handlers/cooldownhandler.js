@@ -13,7 +13,7 @@ module.exports = {
 	 */
 	async handleCooldown(interaction, command) {
         const userId = interaction.user.id;
-        const name = command.data.name;
+    const name = command.data.name;
 
         const cooldownAmount = (command.cooldown ?? DEFAULT_COOLDOWN_SECONDS) * MS_PER_SECOND;
 

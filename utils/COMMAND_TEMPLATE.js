@@ -3,7 +3,6 @@
  * Copy this file and modify to create new commands
  * 
  * Command Structure:
- * - category: Group commands by type (utility, admin, fun, etc.)
  * - permissions: (optional) Required Discord permissions ['Administrator', 'ManageMessages']
  * - cooldown: (optional) Cooldown in seconds (default: 3)
  * - data: SlashCommandBuilder - Defines the command structure
@@ -13,7 +12,6 @@
 const { SlashCommandBuilder } = require('discord.js');
 
 module.exports = {
-	category: 'utility', // Change this to match your command type
 	permissions: [], // Add required permissions if needed
 	cooldown: 3, // Cooldown in seconds (optional)
 	data: new SlashCommandBuilder()

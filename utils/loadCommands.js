@@ -3,39 +3,51 @@ const path = require('node:path');
 const logger = require('./logger');
 
 /**
- * Loads all commands from a folder structure
- * Recursively searches subfolders for .js files with data and execute properties
- * @param {string} foldersPath - Root path to commands folder
- * @returns {Array<{command: object, filePath: string}>} Array of loaded commands with their paths
+ * Recursively loads commands from a folder structure
+ * Returns an array of { command, filePath }
  */
 function loadCommandsFromFolder(foldersPath) {
-	const commands = [];
-	const commandFolders = fs.readdirSync(foldersPath);
+    const results = [];
 
-	for (const folder of commandFolders) {
-		const commandsPath = path.join(foldersPath, folder);
-		const stat = fs.statSync(commandsPath);
-		if (!stat.isDirectory()) continue;
-		const commandFiles = fs.readdirSync(commandsPath).filter((file) => file.endsWith('.js'));
-		
-		for (const file of commandFiles) {
-			const filePath = path.join(commandsPath, file);
-			
-			try {
-				const command = require(filePath);
-				
-				if ('data' in command && 'execute' in command) {
-					commands.push({ command, filePath });
-				} else {
-					logger.warn(`Command at ${filePath} is missing "data" or "execute" property`);
-				}
-			} catch (error) {
-				logger.error(`Failed to load command ${filePath}: ${error.message}`);
-			}
-		}
-	}
+    const files = fs.readdirSync(foldersPath);
 
-	return commands;
+    for (const file of files) {
+        const fullPath = path.join(foldersPath, file);
+        const stat = fs.statSync(fullPath);
+
+        // If folder → recurse
+        if (stat.isDirectory()) {
+            results.push(...loadCommandsFromFolder(fullPath));
+            continue;
+        }
+
+        // Only load .js files
+        if (!file.endsWith('.js')) continue;
+
+        try {
+            const command = require(fullPath);
+
+            // Ensure command has required properties
+            if (!command.data || !command.execute) {
+                logger.warn(`Command at ${fullPath} missing data or execute`);
+                continue;
+            }
+
+            // Store file path inside command so reload works
+            command.filePath = fullPath;
+
+            // Return both command and filePath
+            results.push({
+                command,
+                filePath: fullPath
+            });
+
+        } catch (err) {
+            logger.error(`Failed to load command ${fullPath}: ${err.message}`);
+        }
+    }
+
+    return results;
 }
 
 module.exports = { loadCommandsFromFolder };

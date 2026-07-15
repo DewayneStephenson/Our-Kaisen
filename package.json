@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node index.js",
     "deploy": "node deploy-commands.js",
+    "deploy:global": "node deploy-commands.js --global",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },

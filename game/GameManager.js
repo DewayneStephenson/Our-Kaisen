@@ -17,6 +17,8 @@ class GameManager {
     static deleteGame(channelID) {
         return this.games.delete(channelID);
     }
+
+    
 }
 
 module.exports = GameManager;

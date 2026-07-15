@@ -22,7 +22,7 @@ npm install
 TOKEN=your_discord_bot_token_here
 ```
 
-4. Update `config.json` with your Discord IDs:
+4. Update `config/config.json` with your Discord IDs:
 ```json
 {
     "clientId": "your_bot_client_id",
@@ -45,7 +45,7 @@ npm run deploy
 ## Project Structure
 
 - `index.js` - Main bot entry point
-- `config.json` - Discord IDs configuration
+- `config/config.json` - Discord IDs configuration
 - `.env` - Environment variables (token)
 - `commands/` - Slash command files
 - `events/` - Event handlers (interactionCreate, ready, etc.)
@@ -61,18 +61,18 @@ npm run deploy
 
 ## Features
 
-- ✅ Slash command framework
-- ✅ Cooldown system
-- ✅ Error handling & logging
-- ✅ Dynamic command loading
-- ✅ Event error protection
-- ✅ Configuration validation
+- Slash command framework
+- Cooldown system
+- Error handling & logging
+- Dynamic command loading
+- Event error protection
+- Configuration validation
 
 ## Troubleshooting
 
 If the bot fails to start:
 1. Check `.env` file has valid TOKEN
-2. Check `config.json` has valid clientId and guildId
+2. Check `config/config.json` has valid clientId and guildId
 3. Run `npm install` to ensure all dependencies are installed
 4. Check console logs for detailed error messages
 
