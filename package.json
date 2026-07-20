@@ -2,23 +2,31 @@
   "name": "our-kaisen",
   "version": "1.0.0",
   "description": "Discord bot for game management and interactions",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
-    "start": "node index.js",
-    "deploy": "node deploy-commands.js",
-    "deploy:global": "node deploy-commands.js --global",
+    "start": "node dist/index.js",
+    "deploy": "node dist/deploy-commands.js",
+    "deploy:global": "node dist/deploy-commands.js --global",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "build": "tsc"
   },
-  "keywords": ["discord", "bot", "game"],
+  "keywords": [
+    "discord",
+    "bot",
+    "game"
+  ],
   "author": "Your Name",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "dependencies": {
+    "@discordjs/rest": "^2.6.2",
+    "discord-api-types": "^0.38.50",
     "discord.js": "^14.26.4",
     "dotenv": "^17.4.2"
   },
   "devDependencies": {
-    "eslint": "^8.0.0"
+    "ts-node": "^10.9.2",
+    "typescript": "^7.0.2"
   }
 }
