@@ -1,7 +1,7 @@
 import {
     SlashCommandBuilder,
-    ChatInputCommandInteraction,
-    Client,
+    type ChatInputCommandInteraction,
+    type Client,
     GuildMember
 } from "discord.js";
 
@@ -10,7 +10,7 @@ export default {
         .setName("user")
         .setDescription("Provides information about the user."),
 
-    async execute(interaction: ChatInputCommandInteraction, client: Client) {
+    async execute(interaction: ChatInputCommandInteraction, _client: Client) {
         const member = interaction.member;
 
         let joinedAt: string;

@@ -1,4 +1,4 @@
-import Role from "./Role.js";
+import type Role from "./Role.js";
 export default class Lobby {
     channelId: string;
     players: string[];

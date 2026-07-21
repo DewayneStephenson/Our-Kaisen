@@ -13,7 +13,7 @@ export default {
      * @param interaction - The Discord interaction
      * @param client - The bot client
      */
-    async execute(interaction: ChatInputCommandInteraction, client: Client) {
+    async execute(interaction: ChatInputCommandInteraction, _client: Client) {
         await interaction.reply("Command executed successfully!");
     }
 };

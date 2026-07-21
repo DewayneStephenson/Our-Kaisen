@@ -12,7 +12,7 @@ import type {
 export async function sendErrorReply(
     interaction: RepliableInteraction,
     message: string
-): Promise<Message<boolean> | InteractionResponse<boolean> | void> {
+): Promise<Message<boolean> | InteractionResponse<boolean> | undefined> {
     try {
         const reply = { content: message, ephemeral: true };
 

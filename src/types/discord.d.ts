@@ -15,5 +15,7 @@ declare module 'discord.js' {
         getUptime: () => string;
         
         roleManager: typeof RoleManager;
+        RoleKey: keyof typeof RoleManager.ROLES;
+        
     }
 }

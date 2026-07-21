@@ -1,4 +1,4 @@
-import { Events, Client } from 'discord.js';
+import { Events, type Client } from 'discord.js';
 import logger from "../utils/logger.js";
 
 export default {

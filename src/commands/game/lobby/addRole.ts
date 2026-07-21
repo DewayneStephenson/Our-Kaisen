@@ -4,7 +4,7 @@ import {
     type Client
 } from "discord.js";
 
-import RoleManager, { RoleKey } from "../../../game/RoleManager.js";
+import RoleManager, { type RoleKey } from "../../../game/RoleManager.js";
 
 export default {
     data: new SlashCommandBuilder()
@@ -31,7 +31,7 @@ export default {
         const result = RoleManager.addRole(lobby.roles, roleName);
 
         if (!result.success) {
-            let reason;
+            let reason: string;
 
             switch (result.reason) {
                 case "notarole":

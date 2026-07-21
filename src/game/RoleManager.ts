@@ -1,9 +1,6 @@
 import Role from "./Role.js";
 
-export type RoleKey = keyof typeof RoleManager.ROLES;
-
-export default class RoleManager {
-    static ROLES = {
+const ROLES = {
         gojo: new Role("Honored One", "Sorcerer", {
             required: true,
             sees: ["Curse"]
@@ -30,18 +27,17 @@ export default class RoleManager {
         toji: new Role("Stitched Face", "Curse", {
             hiddenFrom: ["Curse"]
         })
-    } as const;
+} as const;
 
-    // -----------------------------
-    // Default Mode (restored)
-    // -----------------------------
-    static DefaultMode(playerCount: number): Role[] {
+export type RoleKey = keyof typeof ROLES;
+
+function DefaultMode(playerCount: number): Role[] {
         const roles: Role[] = [];
 
-        roles.push(this.ROLES.gojo);
+        roles.push(ROLES.gojo);
 
         if (playerCount <= 4) {
-            roles.push(this.ROLES.grade2, this.ROLES.grade2);
+        roles.push(ROLES.grade2, ROLES.grade2);
         }
 
         let curseCount: number;
@@ -53,23 +49,20 @@ export default class RoleManager {
         else curseCount = 6;
 
         for (let i = 0; i < curseCount; i++) {
-            roles.push(this.ROLES.finger);
+        roles.push(ROLES.finger);
         }
 
         const sorcererCount = playerCount - curseCount - 1;
 
         for (let i = 0; i < sorcererCount; i++) {
-            roles.push(this.ROLES.grade2);
+        roles.push(ROLES.grade2);
         }
 
         return roles;
-    }
+}
 
-    // -----------------------------
-    // Add Role
-    // -----------------------------
-    static addRole(currentRoles: Role[], roleName: RoleKey) {
-        const role = this.ROLES[roleName];
+function addRole(currentRoles: Role[], roleName: RoleKey) {
+    const role = ROLES[roleName];
 
         if (role.required)
             return { success: false, reason: "required", currentRoles };
@@ -94,13 +87,10 @@ export default class RoleManager {
         newRoles[index] = role;
 
         return { success: true, reason: "success", newRoles };
-    }
+}
 
-    // -----------------------------
-    // Remove Role (restored)
-    // -----------------------------
-    static removeRole(currentRoles: Role[], roleName: RoleKey) {
-        const role = this.ROLES[roleName];
+function removeRole(currentRoles: Role[], roleName: RoleKey) {
+    const role = ROLES[roleName];
 
         if (role.required)
             return { success: false, reason: "required", currentRoles };
@@ -108,12 +98,9 @@ export default class RoleManager {
         const newRoles = currentRoles.filter(r => r.name !== role.name);
 
         return { success: true, reason: "success", newRoles };
-    }
+}
 
-    // -----------------------------
-    // Visibility Engine (restored)
-    // -----------------------------
-    static visibility(viewer: Role, target: Role): null {
+function visibility(_viewer: Role, _target: Role): null {
         // 1. HiddenFrom: viewer cannot see target at all
         
 
@@ -124,5 +111,6 @@ export default class RoleManager {
 
         // 4. Default: show real alignment
         return null;
-    }
 }
+
+export default { ROLES, DefaultMode, addRole, removeRole, visibility };

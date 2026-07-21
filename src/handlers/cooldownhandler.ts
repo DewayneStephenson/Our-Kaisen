@@ -1,4 +1,4 @@
-import { type RepliableInteraction } from "discord.js";
+import type { RepliableInteraction } from "discord.js";
 import { sendErrorReply } from "../utils/sendErrorReply.js";
 import { DEFAULT_COOLDOWN_SECONDS, MS_PER_SECOND } from "../utils/constants.js";
 
@@ -12,14 +12,12 @@ export async function handleCooldown(
     const cooldownAmount =
         (command.cooldown ?? DEFAULT_COOLDOWN_SECONDS) * MS_PER_SECOND;
 
-    if (!interaction.client.cooldowns.has(name)) {
-        interaction.client.cooldowns.set(name, new Map<string, number>());
-    }
+    const timestamps = interaction.client.cooldowns.get(name) ?? new Map<string, number>();
+    interaction.client.cooldowns.set(name, timestamps);
 
-    const timestamps = interaction.client.cooldowns.get(name)!;
-
-    if (timestamps.has(userId)) {
-        const expires = timestamps.get(userId)! + cooldownAmount;
+    const timestamp = timestamps.get(userId);
+    if (timestamp !== undefined) {
+        const expires = timestamp + cooldownAmount;
 
         if (Date.now() < expires) {
             const remaining = ((expires - Date.now()) / MS_PER_SECOND).toFixed(1);

@@ -3,8 +3,8 @@
  * Tracks which commands are used most frequently and persists to JSON file
  */
 
-import fs from "fs";
-import path from "path";
+import fs from "node:fs";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 import logger from "./logger.js";
 
@@ -82,15 +82,16 @@ export default class CommandUsageTracker {
      * Track a command execution
      */
     track(commandName: string, userId: string): void {
-        if (!this.stats.has(commandName)) {
-            this.stats.set(commandName, {
+        let stat = this.stats.get(commandName);
+        if (!stat) {
+            stat = {
                 count: 0,
                 lastUsed: null,
                 users: new Set()
-            });
+            };
+            this.stats.set(commandName, stat);
         }
 
-        const stat = this.stats.get(commandName)!;
         stat.count++;
         stat.lastUsed = new Date();
         stat.users.add(userId);

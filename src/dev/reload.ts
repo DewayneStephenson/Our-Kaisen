@@ -1,7 +1,7 @@
 import {
     SlashCommandBuilder,
-    ChatInputCommandInteraction,
-    Client
+    type ChatInputCommandInteraction,
+    type Client
 } from "discord.js";
 import { pathToFileURL } from "node:url";
 

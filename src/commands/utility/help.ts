@@ -44,7 +44,7 @@ export default {
         for (const [name] of commands) {
             const category = getCommandCategory(name);
             if (!categories.has(category)) categories.set(category, []);
-            categories.get(category)!.push(name);
+            categories.get(category)?.push(name);
         }
 
         // Autocomplete mode
@@ -60,8 +60,8 @@ export default {
         }
 
         // Category filter mode
-        if (categoryFilter && categories.has(categoryFilter)) {
-            const cmds = categories.get(categoryFilter)!;
+        const cmds = categoryFilter ? categories.get(categoryFilter) : undefined;
+        if (categoryFilter && cmds) {
 
             const embed = new EmbedBuilder()
                 .setColor("#0099ff")

@@ -1,9 +1,8 @@
 import * as logger from "../utils/logger.js";
-import {
+import type {
     Interaction,
     ChatInputCommandInteraction,
-    PermissionsBitField,
-    type PermissionResolvable
+    PermissionResolvable
 } from "discord.js";
 
 export function getCommand(interaction: Interaction) {
