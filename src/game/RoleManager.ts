@@ -96,7 +96,13 @@ function removeRole(currentRoles: Role[], roleName: RoleKey) {
             return { success: false, reason: "required", currentRoles };
 
         const newRoles = currentRoles.filter(r => r.name !== role.name);
+       if (role.alignment === "Sorcerer") {
+           newRoles.push(ROLES.grade2)
+        }
 
+        if (role.alignment === "Curse") {
+           newRoles.push(ROLES.finger)
+        }
         return { success: true, reason: "success", newRoles };
 }
 
