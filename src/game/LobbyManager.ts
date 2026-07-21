@@ -1,6 +1,7 @@
 import { EmbedBuilder } from "discord.js";
 import Lobby from "./Lobby.js";
 import RoleManager from "./RoleManager.js";
+import { SnowflakeUtil } from "discord.js";
 
 export default class LobbyManager {
     lobbies: Map<string, Lobby>;
@@ -73,5 +74,9 @@ export default class LobbyManager {
         }
 
         return lobby;
+    }
+    generateUsers():string {
+        return String(SnowflakeUtil.generate())
+
     }
 }

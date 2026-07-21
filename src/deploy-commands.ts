@@ -32,6 +32,7 @@ if (!clientId || !guildId) {
 
 const isGlobalDeploy = process.argv.includes('--global');
 const skipConfirmation = process.argv.includes('--yes') || process.argv.includes('--force');
+const isDevelopment = process.env.NODE_ENV === "development";
 
 function promptConfirmation(question: string): Promise<string> {
     const rl = readline.createInterface({
@@ -50,15 +51,12 @@ function promptConfirmation(question: string): Promise<string> {
 const commands: any[] = [];
 const foldersPath = path.join(__dirname, 'commands');
 const loadedCommands = await loadCommandsFromFolder(foldersPath);
+const devCommandsPath = path.join(__dirname, "dev");
+const devCommands = isDevelopment && !isGlobalDeploy
+    ? await loadCommandsFromFolder(devCommandsPath)
+    : [];
 
-for (const { command, filePath } of loadedCommands) {
-    const isDevCommand = path.relative(foldersPath, filePath).startsWith(`dev${path.sep}`);
-
-    if (isGlobalDeploy && isDevCommand) {
-        logger.info(`Skipping dev command during global deploy: ${command.data.name}`);
-        continue;
-    }
-
+for (const { command } of [...loadedCommands, ...devCommands]) {
     commands.push(
         typeof command.data.toJSON === 'function'
             ? command.data.toJSON()

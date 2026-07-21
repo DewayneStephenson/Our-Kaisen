@@ -72,6 +72,19 @@ async function bootstrap() {
         client.commandPaths.set(commandName, filePath);
     }
 
+    if (process.env.NODE_ENV === "development") {
+        const devCommandsPath = path.join(__dirname, "dev");
+        const devCommands = await loadCommandsFromFolder(devCommandsPath);
+
+        for (const { command, filePath } of devCommands) {
+            const commandName = command.data.name;
+            client.commands.set(commandName, command);
+            client.commandPaths.set(commandName, filePath);
+        }
+
+        logger.info(`Loaded ${devCommands.length} development commands`);
+    }
+
     logger.info(`Loaded ${loadedCommands.length} commands`);
 
     // Load handlers

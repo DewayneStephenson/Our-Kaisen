@@ -10,37 +10,37 @@ export default {
         .setName("reload")
         .setDescription("Reload a command")
         .addStringOption(option =>
-            option.setName("command")
+            option
+                .setName("command")
                 .setDescription("Command name")
                 .setRequired(true)
         ),
 
     async execute(interaction: ChatInputCommandInteraction, client: Client) {
-       const name = interaction.options.getString("command");
-       if (!name) {
-            return interaction.reply("You must provide a command name.");
-        }
-
+        const name = interaction.options.getString("command", true);
         const cmd = client.commands.get(name);
 
-        if (!cmd) {
+        if (!cmd?.filePath) {
             return interaction.reply(`Command \`${name}\` not found.`);
         }
 
         try {
-            // ESM-safe cache busting
-            const newPath = `${pathToFileURL(cmd.filePath).href}?update=${Date.now()}`;
-            const imported = await import(newPath);
+            const moduleUrl = pathToFileURL(cmd.filePath);
+            moduleUrl.searchParams.set("update", String(Date.now()));
+            const imported = await import(moduleUrl.href);
+            const newCmd = imported.default ?? imported;
 
-            const newCmd = imported.default;
+            if (!newCmd.data || !newCmd.execute) {
+                return interaction.reply(`Reloaded module for \`${name}\` is not a valid command.`);
+            }
+
             newCmd.filePath = cmd.filePath;
-
-            client.commands.set(newCmd.data.name, newCmd);
+            client.commands.set(name, newCmd);
 
             return interaction.reply(`Reloaded \`${name}\`.`);
-        } catch (err) {
-            const error = err instanceof Error ? err : new Error(String(err));
-            return interaction.reply(`Error reloading \`${name}\`: ${error.message}`);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            return interaction.reply(`Error reloading \`${name}\`: ${message}`);
         }
-    },
+    }
 };
