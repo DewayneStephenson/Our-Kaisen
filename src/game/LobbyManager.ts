@@ -58,7 +58,7 @@ export default class LobbyManager {
     addPlayer(channelId: string, userId: string) {
         const lobby = this.getLobby(channelId);
         if (!lobby) return null;
-
+        if (lobby.isBotLobby) return null;
         if (!lobby.players.includes(userId)) {
             lobby.players.push(userId);
         }
@@ -67,7 +67,8 @@ export default class LobbyManager {
 
     removePlayer(channelId: string, userId: string) {
         const lobby = this.getLobby(channelId);
-        if (!lobby) return null;
+        if (!lobby) return null; 
+        if (lobby.isBotLobby) return null;
 
         lobby.players = lobby.players.filter(id => id !== userId);
 
@@ -78,12 +79,12 @@ export default class LobbyManager {
         return lobby;
     }
 
-    botLobby(channelId: string, players: number) {
+    botLobby(channelId: string, bots: number) {
         if (this.lobbies.has(channelId)) return null;
 
         const lobby = new Lobby(channelId);
-
-        for (let i = 0; i < players; i++) {
+        lobby.isBotLobby = true;
+        for (let i = 0; i < bots; i++) {
             const fake = generateBotUser();
             lobby.players.push(fake.id);
             lobby.botNames.set(fake.id, fake.name);
@@ -93,4 +94,37 @@ export default class LobbyManager {
         this.lobbies.set(channelId, lobby);
         return lobby;
     }
+     addBots(channelId: string, bots: number) {
+        const lobby = this.getLobby(channelId);
+        if (!lobby) return null;
+        if (!lobby.isBotLobby) return null;
+        if (bots + lobby.players.length > 25) bots = 25 - lobby.players.length;
+        for (let i = 0; i < bots; i++) {
+            const fake = generateBotUser();
+            lobby.players.push(fake.id);
+            lobby.botNames.set(fake.id, fake.name);
+        }
+        
+        return lobby;
+    }
+    removeBots(channelId: string, bots: number) {
+    const lobby = this.getLobby(channelId);
+    if (!lobby) return null;
+    if (!lobby.isBotLobby) return null;
+
+    if (bots > lobby.players.length) {
+        bots = lobby.players.length;
+    }
+
+    lobby.players = lobby.players.slice(0, lobby.players.length - bots);
+
+    if (lobby.players.length === 0) {
+        this.deleteLobby(channelId);
+    }
+
+    return lobby;
+}
+
+
+    
 }

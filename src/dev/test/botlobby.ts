@@ -18,8 +18,8 @@ export default {
         ),
 
     async execute(interaction: ChatInputCommandInteraction, client: Client) {
-        const players = interaction.options.getInteger("bots", true);
-        const lobby = client.lobbyManager.botLobby(interaction.channelId, players);
+        const bots = interaction.options.getInteger("bots", true);
+        const lobby = client.lobbyManager.botLobby(interaction.channelId, bots);
 
         if (!lobby) {
             return interaction.reply({

@@ -6,9 +6,16 @@ import {
 
 export default {
     data: new SlashCommandBuilder()
-        .setName("join")
-        .setDescription("Join the lobby"),
-
+        .setName("add_bots")
+        .setDescription("Add a number of bots")
+        .addIntegerOption(option =>
+            option
+                .setName("bots")
+                .setDescription("Number of bots")
+                .setMinValue(1)
+                .setMaxValue(25)
+                .setRequired(true)
+        ),
     async execute(interaction: ChatInputCommandInteraction, client: Client) {
         const lobby = client.lobbyManager.getLobby(interaction.channelId);
 
@@ -18,14 +25,15 @@ export default {
                 ephemeral: true
             });
         }
-        if (lobby.isBotLobby) {
+        if (!lobby.isBotLobby) {
             return interaction.reply({
-            content: "You cannot join a bot lobby.",
+            content: "Bots cannot join a player lobby.",
             ephemeral: true
             });
-}
-
-        client.lobbyManager.addPlayer(interaction.channelId, interaction.user.id);
+        }
+        
+        const bots = interaction.options.getInteger("bots", true);
+        client.lobbyManager.addBots(interaction.channelId, bots);
 
         const embed = client.lobbyManager.buildEmbed(interaction.channelId);
 
@@ -34,7 +42,7 @@ export default {
         }
 
         return interaction.reply({
-            content: "You joined the lobby.",
+            content: "Successfully added bots.",
             ephemeral: true
         });
     }
