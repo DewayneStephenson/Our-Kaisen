@@ -1,7 +1,7 @@
 import { EmbedBuilder } from "discord.js";
 import Lobby from "./Lobby.js";
 import RoleManager from "./RoleManager.js";
-import { SnowflakeUtil } from "discord.js";
+import { generateBotUser } from "../utils/botUser.js";
 
 export default class LobbyManager {
     lobbies: Map<string, Lobby>;
@@ -41,7 +41,9 @@ export default class LobbyManager {
                 {
                     name: `Players (${lobby.players.length})`,
                     value: lobby.players.length
-                        ? lobby.players.map(id => `<@${id}>`).join("\n")
+                        ? lobby.players
+                            .map(id => lobby.botNames.get(id) ?? `<@${id}>`)
+                            .join("\n")
                         : "Empty Lobby",
                 },
                 {
@@ -75,8 +77,20 @@ export default class LobbyManager {
 
         return lobby;
     }
-    generateUsers():string {
-        return String(SnowflakeUtil.generate())
 
+    botLobby(channelId: string, players: number) {
+        if (this.lobbies.has(channelId)) return null;
+
+        const lobby = new Lobby(channelId);
+
+        for (let i = 0; i < players; i++) {
+            const fake = generateBotUser();
+            lobby.players.push(fake.id);
+            lobby.botNames.set(fake.id, fake.name);
+        }
+
+        lobby.roles = RoleManager.DefaultMode(lobby.players.length);
+        this.lobbies.set(channelId, lobby);
+        return lobby;
     }
 }

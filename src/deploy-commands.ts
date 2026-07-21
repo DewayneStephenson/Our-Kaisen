@@ -16,8 +16,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const configPath = path.join(__dirname, '../config/config.json');
-const rawConfig = fs.readFileSync(configPath, 'utf8');
-const { clientId, guildId } = JSON.parse(rawConfig);
+const config = fs.existsSync(configPath)
+    ? JSON.parse(fs.readFileSync(configPath, "utf8"))
+    : {
+        clientId: process.env.CLIENT_ID,
+        guildId: process.env.GUILD_ID
+    };
+const { clientId, guildId } = config;
 
 // Validate config
 if (!process.env.TOKEN) {
@@ -26,13 +31,14 @@ if (!process.env.TOKEN) {
 }
 
 if (!clientId || !guildId) {
-    logger.error('clientId or guildId missing in config/config.json');
+    logger.error(
+        "Missing Discord IDs. Set CLIENT_ID and GUILD_ID in .env, or create config/config.json from config/config.example.json."
+    );
     process.exit(1);
 }
 
 const isGlobalDeploy = process.argv.includes('--global');
 const skipConfirmation = process.argv.includes('--yes') || process.argv.includes('--force');
-const isDevelopment = process.env.NODE_ENV === "development";
 
 function promptConfirmation(question: string): Promise<string> {
     const rl = readline.createInterface({
@@ -52,7 +58,7 @@ const commands: any[] = [];
 const foldersPath = path.join(__dirname, 'commands');
 const loadedCommands = await loadCommandsFromFolder(foldersPath);
 const devCommandsPath = path.join(__dirname, "dev");
-const devCommands = isDevelopment && !isGlobalDeploy
+const devCommands = !isGlobalDeploy
     ? await loadCommandsFromFolder(devCommandsPath)
     : [];
 

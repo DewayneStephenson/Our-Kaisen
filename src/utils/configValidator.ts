@@ -15,28 +15,27 @@ interface Config {
 }
 
 /**
- * Validates config/config.json has all required Discord IDs
+ * Validates config/config.json or environment variables have all required Discord IDs
  * @returns true if valid, false otherwise
  */
 export function validateConfig(): boolean {
     try {
         const configPath = path.join(__dirname, "..", "config", "config.json");
 
-        if (!fs.existsSync(configPath)) {
-            logger.error("config/config.json not found");
-            return false;
-        }
-
-        const raw = fs.readFileSync(configPath, "utf8");
-        const config: Config = JSON.parse(raw);
+        const config: Config = fs.existsSync(configPath)
+            ? JSON.parse(fs.readFileSync(configPath, "utf8"))
+            : {
+                clientId: process.env.CLIENT_ID ?? "",
+                guildId: process.env.GUILD_ID ?? ""
+            };
 
         if (!config.clientId) {
-            logger.error("config/config.json missing clientId");
+            logger.error("Missing clientId. Set CLIENT_ID or config/config.json clientId.");
             return false;
         }
 
         if (!config.guildId) {
-            logger.error("config/config.json missing guildId");
+            logger.error("Missing guildId. Set GUILD_ID or config/config.json guildId.");
             return false;
         }
 

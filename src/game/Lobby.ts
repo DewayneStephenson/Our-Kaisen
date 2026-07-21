@@ -2,6 +2,7 @@ import type Role from "./Role.js";
 export default class Lobby {
     channelId: string;
     players: string[];
+    botNames: Map<string, string>;
     settings: string;
     roles: Role[];
     host: string | null;
@@ -9,6 +10,7 @@ export default class Lobby {
     constructor(channelId: string) {
         this.channelId = channelId;
         this.players = [];
+        this.botNames = new Map();
         this.settings = "lobby";
         this.roles = [];
         this.host = null;
