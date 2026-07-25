@@ -5,6 +5,7 @@ export default class Game {
     votes: Record<string, string>;
     actions: Record<string, any>;
     started: boolean;
+    
 
     constructor(channelId: string) {
         this.channelId = channelId;

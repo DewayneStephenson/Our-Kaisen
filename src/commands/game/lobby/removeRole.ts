@@ -40,6 +40,9 @@ export default {
                 case "required":
                     reason = `${roleName} is required, delete an optional role instead.`;
                     break;
+                 case "not_in":
+                    reason = `${roleName} is not in the lobby`;
+                    break;
                 default:
                     reason = "Unexpected error.";
             }

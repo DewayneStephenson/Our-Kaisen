@@ -1,8 +1,9 @@
 import Game from "./Game.js";
+import Lobby from "./Lobby.js";
 
 const games = new Map<string, Game>();
 
-function createGame(channelId: string) {
+function createGame(channelId:string, lobby:Lobby) {
     if (games.has(channelId)) return null;
 
     const game = new Game(channelId);

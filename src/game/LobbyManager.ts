@@ -20,6 +20,9 @@ export default class LobbyManager {
         lobby.roles = RoleManager.DefaultMode(lobby.players.length);
 
         this.lobbies.set(channelId, lobby);
+
+        lobby.host = userID;
+
         return lobby;
     }
 
@@ -62,6 +65,7 @@ export default class LobbyManager {
         if (!lobby.players.includes(userId)) {
             lobby.players.push(userId);
         }
+        lobby.roles = RoleManager.updateRole(lobby.roles,lobby.players.length);
         return lobby;
     }
 
@@ -74,7 +78,9 @@ export default class LobbyManager {
 
         if (lobby.players.length === 0) {
             this.deleteLobby(channelId);
+            return lobby;
         }
+        lobby.roles = RoleManager.updateRole(lobby.roles,lobby.players.length);
 
         return lobby;
     }
@@ -104,7 +110,7 @@ export default class LobbyManager {
             lobby.players.push(fake.id);
             lobby.botNames.set(fake.id, fake.name);
         }
-        
+        lobby.roles = RoleManager.updateRole(lobby.roles,lobby.players.length);
         return lobby;
     }
     removeBots(channelId: string, bots: number) {
@@ -115,12 +121,12 @@ export default class LobbyManager {
     if (bots > lobby.players.length) {
         bots = lobby.players.length;
     }
-
     lobby.players = lobby.players.slice(0, lobby.players.length - bots);
-
     if (lobby.players.length === 0) {
         this.deleteLobby(channelId);
+        return lobby;
     }
+    lobby.roles = RoleManager.updateRole(lobby.roles,lobby.players.length)
 
     return lobby;
 }
