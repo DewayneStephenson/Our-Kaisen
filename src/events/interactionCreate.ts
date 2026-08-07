@@ -1,8 +1,8 @@
-import { Events, type Interaction, type Client } from "discord.js";
-import { sendErrorReply } from "../utils/sendErrorReply.js";
-import { MESSAGES } from "../utils/constants.js";
+import { type Client, Events, type Interaction } from "discord.js";
 import CommandUsageTracker from "../utils/commandUsageTracker.js";
+import { MESSAGES } from "../utils/constants.js";
 import * as logger from "../utils/logger.js";
+import { sendErrorReply } from "../utils/sendErrorReply.js";
 
 const commandUsageTracker = new CommandUsageTracker();
 
@@ -21,23 +21,35 @@ export default {
             const command = commandHandler.getCommand(interaction);
             if (!command) return;
 
-            commandUsageTracker.track(interaction.commandName, interaction.user.id);
+            commandUsageTracker.track(
+                interaction.commandName,
+                interaction.user.id,
+            );
 
             if (!commandHandler.hasPermission(interaction, command)) {
-                return sendErrorReply(interaction, MESSAGES.MISSING_PERMISSIONS);
+                return sendErrorReply(
+                    interaction,
+                    MESSAGES.MISSING_PERMISSIONS,
+                );
             }
 
-            if (await cooldownHandler.handleCooldown(interaction, command)) return;
+            if (await cooldownHandler.handleCooldown(interaction, command))
+                return;
 
             try {
                 const startTime = performance.now();
                 await command.execute(interaction, client);
                 logger.debug(
-                    `Command '${interaction.commandName}' executed in ${(performance.now() - startTime).toFixed(2)}ms`
+                    `Command '${interaction.commandName}' executed in ${(performance.now() - startTime).toFixed(2)}ms`,
                 );
             } catch (error) {
-                logger.error(`Command '${interaction.commandName}' failed: ${error instanceof Error ? error.message : String(error)}`);
-                await sendErrorReply(interaction, MESSAGES.ERROR_EXECUTING_COMMAND);
+                logger.error(
+                    `Command '${interaction.commandName}' failed: ${error instanceof Error ? error.message : String(error)}`,
+                );
+                await sendErrorReply(
+                    interaction,
+                    MESSAGES.ERROR_EXECUTING_COMMAND,
+                );
             }
 
             return;
@@ -47,7 +59,10 @@ export default {
             return client.handlers.buttonHandler.handle(interaction, client);
         }
 
-        if (interaction.isStringSelectMenu() && client.handlers.componentHandler) {
+        if (
+            interaction.isStringSelectMenu() &&
+            client.handlers.componentHandler
+        ) {
             return client.handlers.componentHandler.handle(interaction, client);
         }
 
@@ -55,8 +70,14 @@ export default {
             return client.handlers.modalHandler.handle(interaction, client);
         }
 
-        if (interaction.isAutocomplete() && client.handlers.autocompleteHandler) {
-            return client.handlers.autocompleteHandler.handle(interaction, client);
+        if (
+            interaction.isAutocomplete() &&
+            client.handlers.autocompleteHandler
+        ) {
+            return client.handlers.autocompleteHandler.handle(
+                interaction,
+                client,
+            );
         }
-    }
+    },
 };

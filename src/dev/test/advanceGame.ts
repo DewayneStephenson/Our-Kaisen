@@ -1,13 +1,16 @@
 import {
-    PermissionFlagsBits,
-    SlashCommandBuilder,
     type ChatInputCommandInteraction,
     type Client,
-    MessageFlags
+    MessageFlags,
+    PermissionFlagsBits,
+    SlashCommandBuilder,
 } from "discord.js";
 
 import MissionManager from "../../game/managers/MissionManager.js";
-import { publishRoundResult, refreshMissionMessage } from "../../utils/missionDebug.js";
+import {
+    publishRoundResult,
+    refreshMissionMessage,
+} from "../../utils/missionDebug.js";
 import { scheduleMissionTimer } from "../../utils/missionTimers.js";
 
 export default {
@@ -20,10 +23,10 @@ export default {
     async execute(interaction: ChatInputCommandInteraction, client: Client) {
         const game = client.gameRegistry.getGame(interaction.channelId);
 
-        if (!game || !game.started || !game.lobby.isBotLobby) {
+        if (!game?.started || !game.lobby.isBotLobby) {
             return interaction.reply({
                 content: "No started bot game exists in this channel.",
-                flags: MessageFlags.Ephemeral
+                flags: MessageFlags.Ephemeral,
             });
         }
 
@@ -35,7 +38,7 @@ export default {
             if (game.expedition.length !== requiredTeamSize) {
                 return interaction.reply({
                     content: `The expedition must contain ${requiredTeamSize} players before advancing.`,
-                    flags: MessageFlags.Ephemeral
+                    flags: MessageFlags.Ephemeral,
                 });
             }
 
@@ -44,7 +47,7 @@ export default {
             if (!missionManager.allPlayersVoted()) {
                 return interaction.reply({
                     content: "Not all approval votes have been cast yet.",
-                    flags: MessageFlags.Ephemeral
+                    flags: MessageFlags.Ephemeral,
                 });
             }
 
@@ -57,8 +60,9 @@ export default {
         } else if (game.phase === "MISSION") {
             if (!missionManager.allExpeditionMembersVoted()) {
                 return interaction.reply({
-                    content: "Not all expedition members have cast a mission vote yet.",
-                    flags: MessageFlags.Ephemeral
+                    content:
+                        "Not all expedition members have cast a mission vote yet.",
+                    flags: MessageFlags.Ephemeral,
                 });
             }
 
@@ -66,12 +70,12 @@ export default {
         } else if (game.phase === "SEALING") {
             return interaction.reply({
                 content: "All missions are already complete.",
-                flags: MessageFlags.Ephemeral
+                flags: MessageFlags.Ephemeral,
             });
         } else {
             return interaction.reply({
                 content: "Use /start_bot first to move the game into planning.",
-                flags: MessageFlags.Ephemeral
+                flags: MessageFlags.Ephemeral,
             });
         }
 
@@ -81,7 +85,7 @@ export default {
 
         return interaction.reply({
             content: `Advanced game state to ${game.phase}.`,
-            flags: MessageFlags.Ephemeral
+            flags: MessageFlags.Ephemeral,
         });
-    }
+    },
 };

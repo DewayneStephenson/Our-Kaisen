@@ -1,9 +1,9 @@
 import {
+    type ChatInputCommandInteraction,
+    type Client,
     MessageFlags,
     PermissionFlagsBits,
     SlashCommandBuilder,
-    type ChatInputCommandInteraction,
-    type Client
 } from "discord.js";
 
 import { EmbedCreator } from "../../../ui/EmbedCreator.js";
@@ -14,56 +14,72 @@ export default {
     data: new SlashCommandBuilder()
         .setName("settings")
         .setDescription("Configure lobby timer settings")
-        .addIntegerOption(option =>
-            option.setName("mission_selection")
-                .setDescription("Seconds for the leader to select an expedition")
+        .addIntegerOption((option) =>
+            option
+                .setName("mission_selection")
+                .setDescription(
+                    "Seconds for the leader to select an expedition",
+                )
                 .setMinValue(5)
                 .setMaxValue(300)
-                .setRequired(false)
+                .setRequired(false),
         )
-        .addIntegerOption(option =>
-            option.setName("voting")
+        .addIntegerOption((option) =>
+            option
+                .setName("voting")
                 .setDescription("Seconds for approval voting")
                 .setMinValue(5)
                 .setMaxValue(300)
-                .setRequired(false)
+                .setRequired(false),
         )
-        .addIntegerOption(option =>
-            option.setName("mission")
+        .addIntegerOption((option) =>
+            option
+                .setName("mission")
                 .setDescription("Seconds for mission decision")
                 .setMinValue(5)
                 .setMaxValue(300)
-                .setRequired(false)
+                .setRequired(false),
         )
-        .addIntegerOption(option =>
-            option.setName("sealing")
-                .setDescription("Seconds for the Curse to choose a Sealing target")
+        .addIntegerOption((option) =>
+            option
+                .setName("sealing")
+                .setDescription(
+                    "Seconds for the Curse to choose a Sealing target",
+                )
                 .setMinValue(5)
                 .setMaxValue(300)
-                .setRequired(false)
+                .setRequired(false),
         )
-        .addIntegerOption(option =>
-            option.setName("action_time")
-                .setDescription("Muted action time after discussion ends (0 keeps immediate phases)")
+        .addIntegerOption((option) =>
+            option
+                .setName("action_time")
+                .setDescription(
+                    "Muted action time after discussion ends (0 keeps immediate phases)",
+                )
                 .setMinValue(0)
                 .setMaxValue(60)
-                .setRequired(false)
+                .setRequired(false),
         )
-        .addStringOption(option =>
-            option.setName("title")
+        .addStringOption((option) =>
+            option
+                .setName("title")
                 .setDescription("Optional title for the game channels")
                 .setMaxLength(80)
-                .setRequired(false)
+                .setRequired(false),
         )
-        .addBooleanOption(option => option
-            .setName("phase_mute")
-            .setDescription("Enable voice muting during protected phase windows")
-            .setRequired(false)
+        .addBooleanOption((option) =>
+            option
+                .setName("phase_mute")
+                .setDescription(
+                    "Enable voice muting during protected phase windows",
+                )
+                .setRequired(false),
         )
-        .addBooleanOption(option => option
-            .setName("phase_chat_lock")
-            .setDescription("Prevent chat during protected phase windows")
-            .setRequired(false)
+        .addBooleanOption((option) =>
+            option
+                .setName("phase_chat_lock")
+                .setDescription("Prevent chat during protected phase windows")
+                .setRequired(false),
         ),
 
     async execute(interaction: ChatInputCommandInteraction, client: Client) {
@@ -72,18 +88,19 @@ export default {
         if (!lobby) {
             return interaction.reply({
                 content: "No lobby exists in this channel.",
-                flags: MessageFlags.Ephemeral
+                flags: MessageFlags.Ephemeral,
             });
         }
 
         if (lobby.host !== interaction.user.id) {
             return interaction.reply({
                 content: "Only the lobby host can change settings.",
-                flags: MessageFlags.Ephemeral
+                flags: MessageFlags.Ephemeral,
             });
         }
 
-        const missionSelection = interaction.options.getInteger("mission_selection");
+        const missionSelection =
+            interaction.options.getInteger("mission_selection");
         const voting = interaction.options.getInteger("voting");
         const mission = interaction.options.getInteger("mission");
         const sealing = interaction.options.getInteger("sealing");
@@ -116,8 +133,10 @@ export default {
             lobby.title = title.trim() || null;
         }
 
-        if (phaseMute !== null) lobby.timerSettings.phaseMuteEnabled = phaseMute;
-        if (phaseChatLock !== null) lobby.timerSettings.phaseChatLockEnabled = phaseChatLock;
+        if (phaseMute !== null)
+            lobby.timerSettings.phaseMuteEnabled = phaseMute;
+        if (phaseChatLock !== null)
+            lobby.timerSettings.phaseChatLockEnabled = phaseChatLock;
 
         const embed = EmbedCreator.lobby(lobby);
 
@@ -127,7 +146,7 @@ export default {
 
         return interaction.reply({
             content: "Updated lobby timer settings.",
-            flags: MessageFlags.Ephemeral
+            flags: MessageFlags.Ephemeral,
         });
-    }
+    },
 };

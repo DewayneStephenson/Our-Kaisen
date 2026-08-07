@@ -1,11 +1,12 @@
 import {
+    type ChatInputCommandInteraction,
+    type Client,
+    MessageFlags,
     PermissionFlagsBits,
     SlashCommandBuilder,
-    type ChatInputCommandInteraction,
-    type Client
 } from "discord.js";
 
-import  {EmbedCreator} from "../../ui/EmbedCreator.js"
+import { EmbedCreator } from "../../ui/EmbedCreator.js";
 
 export default {
     permissions: [PermissionFlagsBits.Administrator],
@@ -13,32 +14,34 @@ export default {
     data: new SlashCommandBuilder()
         .setName("bot_lobby")
         .setDescription("Create a bot lobby")
-        .addIntegerOption(option =>
+        .addIntegerOption((option) =>
             option
                 .setName("bots")
                 .setDescription("Number of bots")
                 .setMinValue(1)
                 .setMaxValue(25)
-                .setRequired(true)
+                .setRequired(true),
         ),
 
     async execute(interaction: ChatInputCommandInteraction, client: Client) {
         const bots = interaction.options.getInteger("bots", true);
-        const lobby = client.lobbyManager.botLobby(interaction.channelId, interaction.user.id, bots);
+        const lobby = client.lobbyManager.botLobby(
+            interaction.channelId,
+            interaction.user.id,
+            bots,
+        );
 
         if (!lobby) {
             return interaction.reply({
                 content: "A lobby already exists in this channel.",
-                ephemeral: true
+                flags: MessageFlags.Ephemeral,
             });
         }
 
         const embed = EmbedCreator.lobby(lobby);
-        const message = await interaction.reply({
-            embeds: [embed],
-            fetchReply: true
-        });
+        await interaction.reply({ embeds: [embed] });
+        const message = await interaction.fetchReply();
 
         lobby.message = message;
-    }
+    },
 };

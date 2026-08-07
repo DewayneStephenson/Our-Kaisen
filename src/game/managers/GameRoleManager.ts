@@ -1,7 +1,6 @@
 // RoleManager.ts
-import { KaisenRole} from "../../types/game.js";
-import Player from "../Player.js"
-
+import type { KaisenRole } from "../../types/game.js";
+import type Player from "../Player.js";
 
 export default class RoleManager {
     roles: KaisenRole[];

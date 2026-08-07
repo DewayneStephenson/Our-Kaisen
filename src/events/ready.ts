@@ -1,4 +1,4 @@
-import { Events, type Client } from 'discord.js';
+import { type Client, Events } from "discord.js";
 import logger from "../utils/logger.js";
 
 export default {
@@ -10,7 +10,9 @@ export default {
         const commandCount = client.commands.size;
 
         logger.info(`Bot ready! Logged in as ${client.user?.tag}`);
-        logger.info(`Serving ${guildCount} guild(s) with ${commandCount} command(s)`);
+        logger.info(
+            `Serving ${guildCount} guild(s) with ${commandCount} command(s)`,
+        );
         logger.info(`Uptime: ${client.getUptime()}`);
-    }
+    },
 };

@@ -1,22 +1,22 @@
 import {
-    SlashCommandBuilder,
     type ChatInputCommandInteraction,
     type Client,
-    MessageFlags
+    MessageFlags,
+    SlashCommandBuilder,
 } from "discord.js";
 
-import RoleManager, { type RoleKey } from '../../../lobby/LobbyRoleManager.js';
+import RoleManager, { type RoleKey } from "../../../lobby/LobbyRoleManager.js";
 import { EmbedCreator } from "../../../ui/EmbedCreator.js";
 
 export default {
     data: new SlashCommandBuilder()
         .setName("addrole")
         .setDescription("Adds a role to the lobby")
-        .addStringOption(option =>
+        .addStringOption((option) =>
             option
                 .setName("role")
                 .setDescription("Role to add")
-                .setRequired(true)
+                .setRequired(true),
         ),
 
     async execute(interaction: ChatInputCommandInteraction, client: Client) {
@@ -25,14 +25,14 @@ export default {
         if (!lobby) {
             return interaction.reply({
                 content: "A lobby has not been created.",
-                flags: MessageFlags.Ephemeral
+                flags: MessageFlags.Ephemeral,
             });
         }
         if (lobby.host !== interaction.user.id) {
             return interaction.reply({
                 content: "You are not the host!",
-                flags: MessageFlags.Ephemeral
-            }); 
+                flags: MessageFlags.Ephemeral,
+            });
         }
         const roleName = interaction.options.getString("role", true) as RoleKey;
         const result = RoleManager.addRole(lobby.roles, roleName);
@@ -59,7 +59,7 @@ export default {
 
             return interaction.reply({
                 content: reason,
-                flags: MessageFlags.Ephemeral
+                flags: MessageFlags.Ephemeral,
             });
         }
 
@@ -71,11 +71,12 @@ export default {
             await lobby.message.edit({ embeds: [embed] });
             return interaction.reply({
                 content: "Role added to the lobby.",
-                flags: MessageFlags.Ephemeral
+                flags: MessageFlags.Ephemeral,
             });
         }
 
-        const message = await interaction.reply({ embeds: [embed], fetchReply: true });
+        await interaction.reply({ embeds: [embed] });
+        const message = await interaction.fetchReply();
         lobby.message = message;
-    }
+    },
 };

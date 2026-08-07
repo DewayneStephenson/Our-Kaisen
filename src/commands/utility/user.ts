@@ -1,8 +1,8 @@
 import {
-    SlashCommandBuilder,
     type ChatInputCommandInteraction,
     type Client,
-    GuildMember
+    GuildMember,
+    SlashCommandBuilder,
 } from "discord.js";
 
 export default {
@@ -22,7 +22,7 @@ export default {
         }
 
         await interaction.reply(
-            `This command was run by ${interaction.user.username}, who joined on ${joinedAt}.`
+            `This command was run by ${interaction.user.username}, who joined on ${joinedAt}.`,
         );
-    }
+    },
 };

@@ -1,4 +1,4 @@
-import * as logger from './logger.js';
+import * as logger from "./logger.js";
 
 /**
  * Utility for managing cooldown cleanup to prevent memory leaks
@@ -39,7 +39,7 @@ export const cooldownCleanup = {
                 logger.debug(`Cleaned up ${totalCleaned} expired cooldowns`);
             }
         }, intervalMs);
-    }
+    },
 };
 
 export default cooldownCleanup;

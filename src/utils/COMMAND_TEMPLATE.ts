@@ -1,8 +1,12 @@
-import { SlashCommandBuilder, type ChatInputCommandInteraction, type Client } from "discord.js";
+import {
+    type ChatInputCommandInteraction,
+    type Client,
+    SlashCommandBuilder,
+} from "discord.js";
 
 export default {
     permissions: [], // Optional: ['Administrator', 'ManageMessages']
-    cooldown: 3,     // Optional cooldown in seconds
+    cooldown: 3, // Optional cooldown in seconds
 
     data: new SlashCommandBuilder()
         .setName("commandname")
@@ -15,5 +19,5 @@ export default {
      */
     async execute(interaction: ChatInputCommandInteraction, _client: Client) {
         await interaction.reply("Command executed successfully!");
-    }
+    },
 };

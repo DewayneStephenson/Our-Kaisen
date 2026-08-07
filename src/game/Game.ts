@@ -1,8 +1,8 @@
 // Game.ts
 import { randomUUID } from "node:crypto";
-import { GamePhase, KaisenRole, type TimerSettings } from "../types/game.js";
-import Player from "./Player.js";
-import Lobby from "../lobby/Lobby.js";
+import type Lobby from "../lobby/Lobby.js";
+import type { GamePhase, KaisenRole, TimerSettings } from "../types/game.js";
+import type Player from "./Player.js";
 
 export default class Game {
     id: string;

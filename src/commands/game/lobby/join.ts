@@ -1,11 +1,11 @@
 import {
-    SlashCommandBuilder,
     type ChatInputCommandInteraction,
     type Client,
-    MessageFlags
+    MessageFlags,
+    SlashCommandBuilder,
 } from "discord.js";
 
-import  {EmbedCreator} from "../../../ui/EmbedCreator.js"
+import { EmbedCreator } from "../../../ui/EmbedCreator.js";
 
 export default {
     data: new SlashCommandBuilder()
@@ -18,19 +18,23 @@ export default {
         if (!lobby) {
             return interaction.reply({
                 content: "No lobby exists here.",
-                flags: MessageFlags.Ephemeral
+                flags: MessageFlags.Ephemeral,
             });
         }
         if (lobby.isBotLobby) {
             return interaction.reply({
-            content: "You cannot join a bot lobby.",
-            flags: MessageFlags.Ephemeral
+                content: "You cannot join a bot lobby.",
+                flags: MessageFlags.Ephemeral,
             });
-}
+        }
 
-        client.lobbyManager.addPlayer(interaction.channelId, interaction.user.id,interaction.user.username);
+        client.lobbyManager.addPlayer(
+            interaction.channelId,
+            interaction.user.id,
+            interaction.user.username,
+        );
 
-        const embed = EmbedCreator.lobby(lobby)
+        const embed = EmbedCreator.lobby(lobby);
 
         if (lobby.message) {
             await lobby.message.edit({ embeds: [embed] });
@@ -38,7 +42,7 @@ export default {
 
         return interaction.reply({
             content: "You joined the lobby.",
-            flags: MessageFlags.Ephemeral
+            flags: MessageFlags.Ephemeral,
         });
-    }
+    },
 };

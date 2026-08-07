@@ -1,16 +1,18 @@
-import * as logger from "../utils/logger.js";
 import type {
-    Interaction,
     ChatInputCommandInteraction,
-    PermissionResolvable
+    Interaction,
+    PermissionResolvable,
 } from "discord.js";
+import * as logger from "../utils/logger.js";
 
 export function getCommand(interaction: Interaction) {
     if (!interaction.isChatInputCommand()) return null;
 
     const command = interaction.client.commands.get(interaction.commandName);
     if (!command) {
-        logger.error(`No command matching ${interaction.commandName} was found`);
+        logger.error(
+            `No command matching ${interaction.commandName} was found`,
+        );
         return null;
     }
 
@@ -20,14 +22,12 @@ export function getCommand(interaction: Interaction) {
 
 export function hasPermission(
     interaction: ChatInputCommandInteraction,
-    command: { permissions?: PermissionResolvable[] }
+    command: { permissions?: PermissionResolvable[] },
 ): boolean {
     if (!command.permissions?.length) return true;
 
     if (!interaction.inGuild()) return false;
 
     const perms = interaction.memberPermissions;
-    return command.permissions.every((permission) =>
-        perms?.has(permission)
-    );
+    return command.permissions.every((permission) => perms?.has(permission));
 }

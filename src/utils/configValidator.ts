@@ -25,29 +25,37 @@ export function validateConfig(): boolean {
         const config: Config = fs.existsSync(configPath)
             ? JSON.parse(fs.readFileSync(configPath, "utf8"))
             : {
-                clientId: process.env.CLIENT_ID ?? "",
-                guildId: process.env.GUILD_ID ?? ""
-            };
+                  clientId: process.env.CLIENT_ID ?? "",
+                  guildId: process.env.GUILD_ID ?? "",
+              };
 
         if (!config.clientId) {
-            logger.error("Missing clientId. Set CLIENT_ID or config/config.json clientId.");
+            logger.error(
+                "Missing clientId. Set CLIENT_ID or config/config.json clientId.",
+            );
             return false;
         }
 
         if (!config.guildId) {
-            logger.error("Missing guildId. Set GUILD_ID or config/config.json guildId.");
+            logger.error(
+                "Missing guildId. Set GUILD_ID or config/config.json guildId.",
+            );
             return false;
         }
 
         const idRegex = /^\d{18,19}$/;
 
         if (!idRegex.test(config.clientId)) {
-            logger.error("config/config.json clientId invalid format (must be 18-19 digits)");
+            logger.error(
+                "config/config.json clientId invalid format (must be 18-19 digits)",
+            );
             return false;
         }
 
         if (!idRegex.test(config.guildId)) {
-            logger.error("config/config.json guildId invalid format (must be 18-19 digits)");
+            logger.error(
+                "config/config.json guildId invalid format (must be 18-19 digits)",
+            );
             return false;
         }
 

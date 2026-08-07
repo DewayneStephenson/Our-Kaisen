@@ -1,15 +1,15 @@
 import {
     ChannelType,
-    PermissionFlagsBits,
-    ThreadAutoArchiveDuration,
     type ChatInputCommandInteraction,
     type Client,
+    PermissionFlagsBits,
     type TextChannel,
+    ThreadAutoArchiveDuration,
 } from "discord.js";
 import type Game from "../game/Game.js";
 import * as logger from "./logger.js";
-import { clearMissionTimer } from "./missionTimers.js";
 import { clearPhaseChatLocks } from "./missionChat.js";
+import { clearMissionTimer } from "./missionTimers.js";
 import { clearPhaseVoiceMutes } from "./missionVoice.js";
 
 function channelName(title: string, suffix: string) {

@@ -1,20 +1,23 @@
 import {
-    PermissionFlagsBits,
-    SlashCommandBuilder,
     type ChatInputCommandInteraction,
     type Client,
-    MessageFlags
+    MessageFlags,
+    PermissionFlagsBits,
+    SlashCommandBuilder,
 } from "discord.js";
-
-import Player from "../../game/Player.js";
 import MissionManager from "../../game/managers/MissionManager.js";
-import { findPlayerByToken, pickRandomPlayers, refreshMissionMessage } from "../../utils/missionDebug.js";
+import type Player from "../../game/Player.js";
+import {
+    findPlayerByToken,
+    pickRandomPlayers,
+    refreshMissionMessage,
+} from "../../utils/missionDebug.js";
 import { scheduleMissionTimer } from "../../utils/missionTimers.js";
 
 function parseTokens(input: string) {
     return input
         .split(/[,\n;]/)
-        .map(token => token.trim())
+        .map((token) => token.trim())
         .filter(Boolean);
 }
 
@@ -24,31 +27,40 @@ export default {
     data: new SlashCommandBuilder()
         .setName("simulate_expedition")
         .setDescription("Simulate bot expedition selection in planning")
-        .addSubcommand(subcommand => subcommand
-            .setName("random")
-            .setDescription("Choose a random expedition"))
-        .addSubcommand(subcommand => subcommand
-            .setName("manual")
-            .setDescription("Choose the expedition manually")
-            .addStringOption(option => option
-                .setName("bots")
-                .setDescription("Comma-separated bot names, numbers, or ids")
-                .setRequired(true))),
+        .addSubcommand((subcommand) =>
+            subcommand
+                .setName("random")
+                .setDescription("Choose a random expedition"),
+        )
+        .addSubcommand((subcommand) =>
+            subcommand
+                .setName("manual")
+                .setDescription("Choose the expedition manually")
+                .addStringOption((option) =>
+                    option
+                        .setName("bots")
+                        .setDescription(
+                            "Comma-separated bot names, numbers, or ids",
+                        )
+                        .setRequired(true),
+                ),
+        ),
 
     async execute(interaction: ChatInputCommandInteraction, client: Client) {
         const game = client.gameRegistry.getGame(interaction.channelId);
 
-        if (!game || !game.started || !game.lobby.isBotLobby) {
+        if (!game?.started || !game.lobby.isBotLobby) {
             return interaction.reply({
                 content: "No started bot game exists in this channel.",
-                flags: MessageFlags.Ephemeral
+                flags: MessageFlags.Ephemeral,
             });
         }
 
         if (game.phase !== "PLANNING") {
             return interaction.reply({
-                content: "The game must be in planning before selecting an expedition.",
-                flags: MessageFlags.Ephemeral
+                content:
+                    "The game must be in planning before selecting an expedition.",
+                flags: MessageFlags.Ephemeral,
             });
         }
 
@@ -65,8 +77,9 @@ export default {
 
             if (!botTokens) {
                 return interaction.reply({
-                    content: "Provide a comma-separated list of bot names, numbers, or ids.",
-                    flags: MessageFlags.Ephemeral
+                    content:
+                        "Provide a comma-separated list of bot names, numbers, or ids.",
+                    flags: MessageFlags.Ephemeral,
                 });
             }
 
@@ -78,8 +91,8 @@ export default {
 
                 if (!player) {
                     return interaction.reply({
-                        content: `No bot matched \"${token}\".`,
-                        flags: MessageFlags.Ephemeral
+                        content: `No bot matched "${token}".`,
+                        flags: MessageFlags.Ephemeral,
                     });
                 }
 
@@ -91,24 +104,30 @@ export default {
             if (uniquePlayers.length !== requiredTeamSize) {
                 return interaction.reply({
                     content: `The expedition must contain exactly ${requiredTeamSize} unique bot(s).`,
-                    flags: MessageFlags.Ephemeral
+                    flags: MessageFlags.Ephemeral,
                 });
             }
 
             selectedPlayers = uniquePlayers
-                .map(playerId => game.players.find((player: Player) => player.discordId === playerId))
+                .map((playerId) =>
+                    game.players.find(
+                        (player: Player) => player.discordId === playerId,
+                    ),
+                )
                 .filter((player): player is Player => player !== undefined);
         }
 
-        missionManager.setExpedition(selectedPlayers.map(player => player.discordId));
+        missionManager.setExpedition(
+            selectedPlayers.map((player) => player.discordId),
+        );
         missionManager.beginVoting();
         scheduleMissionTimer(client, game);
 
         await refreshMissionMessage(interaction, game);
 
         return interaction.reply({
-            content: `Selected expedition: ${selectedPlayers.map(player => player.username).join(", ")}.`,
-            flags: MessageFlags.Ephemeral
+            content: `Selected expedition: ${selectedPlayers.map((player) => player.username).join(", ")}.`,
+            flags: MessageFlags.Ephemeral,
         });
-    }
+    },
 };

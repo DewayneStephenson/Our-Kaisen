@@ -1,12 +1,12 @@
 import {
-    MessageFlags,
     type ButtonInteraction,
     type Client,
+    MessageFlags,
     type StringSelectMenuInteraction,
 } from "discord.js";
 import type Game from "../game/Game.js";
-import type Player from "../game/Player.js";
 import MissionManager from "../game/managers/MissionManager.js";
+import type Player from "../game/Player.js";
 import { EmbedCreator } from "../ui/EmbedCreator.js";
 import {
     buildMissionComponents,
@@ -14,17 +14,17 @@ import {
     buildSealingComponents,
     buildVotingComponents,
 } from "../ui/MissionComponents.js";
+import { postGameLog } from "../utils/gameChannels.js";
 import * as logger from "../utils/logger.js";
-import {
-    actionWindowIsOpen,
-    scheduleMissionTimer,
-} from "../utils/missionTimers.js";
 import {
     publishPendingMissionReveals,
     publishRoundResult,
     updateMissionMessage,
 } from "../utils/missionDebug.js";
-import { postGameLog } from "../utils/gameChannels.js";
+import {
+    actionWindowIsOpen,
+    scheduleMissionTimer,
+} from "../utils/missionTimers.js";
 
 function isGamePlayer(
     game: { players: { discordId: string }[] },
@@ -56,7 +56,7 @@ async function handleMissionDecision(
     if (game.phase !== "MISSION") {
         return interaction.reply({
             content: "The game is not in the mission phase.",
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
     }
     if (!actionWindowIsOpen(game)) {
@@ -69,7 +69,7 @@ async function handleMissionDecision(
     if (!game.expedition.includes(interaction.user.id)) {
         return interaction.reply({
             content: "Only expedition members can decide the mission.",
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
     }
 
@@ -82,7 +82,7 @@ async function handleMissionDecision(
         if (result.reason === "sorcerer_cannot_fail") {
             return interaction.reply({
                 content: "Sorcerers can only vote to succeed.",
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
             });
         }
 
@@ -91,7 +91,7 @@ async function handleMissionDecision(
         );
         return interaction.reply({
             content: "Could not record your mission decision.",
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
     }
 
@@ -153,16 +153,16 @@ export async function handleMissionButton(
     ) {
         return interaction.reply({
             content: "Unknown mission action.",
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
     }
 
     const game = client.gameRegistry.getGame(interaction.channelId);
 
-    if (!game || !game.started) {
+    if (!game?.started) {
         return interaction.reply({
             content: "No active game exists here.",
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
     }
 
@@ -181,10 +181,10 @@ export async function handleMissionInteraction(
 ) {
     const game = client.gameRegistry.getGame(interaction.channelId);
 
-    if (!game || !game.started) {
+    if (!game?.started) {
         return interaction.reply({
             content: "No active game exists here.",
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
     }
 
@@ -196,14 +196,14 @@ export async function handleMissionInteraction(
         if (!leader || leader.discordId !== interaction.user.id) {
             return interaction.reply({
                 content: "Only the mission leader can choose the expedition.",
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
             });
         }
 
         if (game.phase !== "PLANNING") {
             return interaction.reply({
                 content: "The game is not in the planning phase.",
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
             });
         }
         if (!actionWindowIsOpen(game)) {
@@ -247,14 +247,14 @@ export async function handleMissionInteraction(
         if (game.phase !== "VOTING") {
             return interaction.reply({
                 content: "The game is not in the voting phase.",
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
             });
         }
 
         if (!isGamePlayer(game, interaction.user.id)) {
             return interaction.reply({
                 content: "Only players in the game can vote.",
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
             });
         }
         if (!actionWindowIsOpen(game)) {
@@ -323,7 +323,7 @@ export async function handleMissionInteraction(
         if (game.phase !== "MISSION") {
             return interaction.reply({
                 content: "Powers can only be used during a mission.",
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
             });
         }
         if (!actionWindowIsOpen(game)) {
@@ -340,7 +340,7 @@ export async function handleMissionInteraction(
         if (actorId !== interaction.user.id) {
             return interaction.reply({
                 content: "Only the player with this power can use it.",
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
             });
         }
 
@@ -352,14 +352,14 @@ export async function handleMissionInteraction(
         if (!actor || !power?.target) {
             return interaction.reply({
                 content: "This power is no longer available.",
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
             });
         }
 
         if (power.uses < 1) {
             return interaction.reply({
                 content: `${power.PowerName} has no uses remaining.`,
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
             });
         }
 
@@ -370,7 +370,7 @@ export async function handleMissionInteraction(
         if (!target) {
             return interaction.reply({
                 content: "That player is no longer in this game.",
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
             });
         }
 
@@ -390,7 +390,10 @@ export async function handleMissionInteraction(
         ) {
             await interaction.channel.send({ content: `📌 ${outcome}` });
         } else {
-            await interaction.followUp({ content: outcome, ephemeral: true });
+            await interaction.followUp({
+                content: outcome,
+                flags: MessageFlags.Ephemeral,
+            });
         }
 
         return interaction.message.edit({
@@ -403,7 +406,7 @@ export async function handleMissionInteraction(
         if (game.phase !== "SEALING" || game.winnerAlignment) {
             return interaction.reply({
                 content: "Sealing is no longer active.",
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
             });
         }
 
@@ -411,7 +414,7 @@ export async function handleMissionInteraction(
             return interaction.reply({
                 content:
                     "Only the selected Curse can choose the Sealing target.",
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
             });
         }
 
@@ -423,7 +426,7 @@ export async function handleMissionInteraction(
         if (!result.success) {
             return interaction.reply({
                 content: "Could not resolve the Sealing target.",
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
             });
         }
 
@@ -443,6 +446,6 @@ export async function handleMissionInteraction(
 
     return interaction.reply({
         content: "Unknown mission interaction.",
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
     });
 }

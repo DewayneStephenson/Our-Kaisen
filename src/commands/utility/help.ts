@@ -1,11 +1,11 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-    SlashCommandBuilder,
-    EmbedBuilder,
-    type ChatInputCommandInteraction,
     type AutocompleteInteraction,
-    type Client
+    type ChatInputCommandInteraction,
+    type Client,
+    EmbedBuilder,
+    SlashCommandBuilder,
 } from "discord.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -14,14 +14,17 @@ export default {
     data: new SlashCommandBuilder()
         .setName("help")
         .setDescription("Shows all available commands")
-        .addStringOption(option =>
+        .addStringOption((option) =>
             option
                 .setName("category")
                 .setDescription("Filter by command category")
-                .setAutocomplete(true)
+                .setAutocomplete(true),
         ),
 
-    async execute(interaction: ChatInputCommandInteraction | AutocompleteInteraction, client: Client) {
+    async execute(
+        interaction: ChatInputCommandInteraction | AutocompleteInteraction,
+        client: Client,
+    ) {
         const categoryFilter = interaction.isAutocomplete()
             ? interaction.options.getFocused()
             : interaction.options.getString("category");
@@ -50,23 +53,24 @@ export default {
         // Autocomplete mode
         if (interaction.isAutocomplete()) {
             const focused = interaction.options.getFocused();
-            const choices = [...categories.keys()].filter(cat =>
-                cat.toLowerCase().startsWith(focused.toLowerCase())
+            const choices = [...categories.keys()].filter((cat) =>
+                cat.toLowerCase().startsWith(focused.toLowerCase()),
             );
 
             return interaction.respond(
-                choices.slice(0, 25).map(cat => ({ name: cat, value: cat }))
+                choices.slice(0, 25).map((cat) => ({ name: cat, value: cat })),
             );
         }
 
         // Category filter mode
-        const cmds = categoryFilter ? categories.get(categoryFilter) : undefined;
+        const cmds = categoryFilter
+            ? categories.get(categoryFilter)
+            : undefined;
         if (categoryFilter && cmds) {
-
             const embed = new EmbedBuilder()
                 .setColor("#0099ff")
                 .setTitle(`Commands — ${categoryFilter}`)
-                .setDescription(cmds.map(cmd => `\`/${cmd}\``).join(", "))
+                .setDescription(cmds.map((cmd) => `\`/${cmd}\``).join(", "))
                 .setFooter({ text: `Total: ${cmds.length}` });
 
             return interaction.reply({ embeds: [embed] });
@@ -77,10 +81,10 @@ export default {
             new EmbedBuilder()
                 .setColor("#0099ff")
                 .setTitle(`${category} Commands`)
-                .setDescription(cmds.map(cmd => `\`/${cmd}\``).join(", "))
-                .setFooter({ text: `Total: ${cmds.length}` })
+                .setDescription(cmds.map((cmd) => `\`/${cmd}\``).join(", "))
+                .setFooter({ text: `Total: ${cmds.length}` }),
         );
 
         return interaction.reply({ embeds });
-    }
+    },
 };

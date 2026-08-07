@@ -1,4 +1,9 @@
-import { MessageFlags, SlashCommandBuilder, type ChatInputCommandInteraction, type Client } from "discord.js";
+import {
+    type ChatInputCommandInteraction,
+    type Client,
+    MessageFlags,
+    SlashCommandBuilder,
+} from "discord.js";
 import { EmbedCreator } from "../../../ui/EmbedCreator.js";
 
 export default {
@@ -10,9 +15,15 @@ export default {
         const game = client.gameRegistry.getGame(interaction.channelId);
 
         if (!game?.started) {
-            return interaction.reply({ content: "No active game exists in this channel.", flags: MessageFlags.Ephemeral });
+            return interaction.reply({
+                content: "No active game exists in this channel.",
+                flags: MessageFlags.Ephemeral,
+            });
         }
 
-        return interaction.reply({ embeds: [EmbedCreator.missions(game)], flags: MessageFlags.Ephemeral });
-    }
+        return interaction.reply({
+            embeds: [EmbedCreator.missions(game)],
+            flags: MessageFlags.Ephemeral,
+        });
+    },
 };

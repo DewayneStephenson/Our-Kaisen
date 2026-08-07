@@ -1,12 +1,12 @@
 import {
-    MessageFlags,
-    SlashCommandBuilder,
     type ChatInputCommandInteraction,
     type Client,
+    MessageFlags,
+    SlashCommandBuilder,
 } from "discord.js";
 import MissionManager from "../../../../game/managers/MissionManager.js";
-import { actionWindowIsOpen } from "../../../../utils/missionTimers.js";
 import { refreshMissionMessage } from "../../../../utils/missionDebug.js";
+import { actionWindowIsOpen } from "../../../../utils/missionTimers.js";
 
 export default {
     data: new SlashCommandBuilder()

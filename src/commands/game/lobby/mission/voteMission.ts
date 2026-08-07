@@ -1,16 +1,16 @@
 import {
-    MessageFlags,
-    SlashCommandBuilder,
     type ChatInputCommandInteraction,
     type Client,
+    MessageFlags,
+    SlashCommandBuilder,
 } from "discord.js";
 
 import MissionManager from "../../../../game/managers/MissionManager.js";
+import { refreshMissionMessage } from "../../../../utils/missionDebug.js";
 import {
     actionWindowIsOpen,
     scheduleMissionTimer,
 } from "../../../../utils/missionTimers.js";
-import { refreshMissionMessage } from "../../../../utils/missionDebug.js";
 
 function parseVoteValue(value: string) {
     const normalized = value.trim().toLowerCase();
@@ -46,7 +46,7 @@ export default {
     async execute(interaction: ChatInputCommandInteraction, client: Client) {
         const game = client.gameRegistry.getGame(interaction.channelId);
 
-        if (!game || !game.started || game.lobby.isBotLobby) {
+        if (!game?.started || game.lobby.isBotLobby) {
             return interaction.reply({
                 content: "No started human game exists in this channel.",
                 flags: MessageFlags.Ephemeral,

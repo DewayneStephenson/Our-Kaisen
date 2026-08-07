@@ -30,9 +30,9 @@ export default class Lobby {
             sealingSeconds: 30,
             actionTimeSeconds: 5,
             phaseMuteEnabled: true,
-            phaseChatLockEnabled: true
+            phaseChatLockEnabled: true,
         };
-        this.roles = [];        // now stores role KEYS
+        this.roles = []; // now stores role KEYS
         this.host = null;
     }
 }

@@ -1,24 +1,19 @@
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
+
 dotenv.config();
 
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
-import {
-    Client,
-    Collection,
-    Events,
-    GatewayIntentBits
-} from 'discord.js';
-
-import { loadCommandsFromFolder } from './utils/loadCommands.js';
-import { validateConfig } from './utils/configValidator.js';
-import * as logger from './utils/logger.js';
-import RoleManager from './lobby/LobbyRoleManager.js';
-import LobbyManager from './lobby/LobbyManager.js';
-import * as gameRegistry from './game/GameRegistry.js';
-import cooldownCleanup from './utils/cooldownCleanup.js';
+import { Client, Collection, Events, GatewayIntentBits } from "discord.js";
+import * as gameRegistry from "./game/GameRegistry.js";
+import LobbyManager from "./lobby/LobbyManager.js";
+import RoleManager from "./lobby/LobbyRoleManager.js";
+import { validateConfig } from "./utils/configValidator.js";
+import cooldownCleanup from "./utils/cooldownCleanup.js";
+import { loadCommandsFromFolder } from "./utils/loadCommands.js";
+import * as logger from "./utils/logger.js";
 
 // Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -31,13 +26,13 @@ if (!validateConfig()) {
 
 // Validate token exists
 if (!process.env.TOKEN) {
-    logger.error('TOKEN not found in .env file');
+    logger.error("TOKEN not found in .env file");
     process.exit(1);
 }
 
 // Create client
 const client = new Client({
-    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates]
+    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates],
 }) as any;
 
 // Custom client properties
@@ -51,7 +46,9 @@ client.startTime = Date.now();
 client.getUptime = function () {
     const uptime = Date.now() - this.startTime;
     const days = Math.floor(uptime / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((uptime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const hours = Math.floor(
+        (uptime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
+    );
     const minutes = Math.floor((uptime % (1000 * 60 * 60)) / (1000 * 60));
     const seconds = Math.floor((uptime % (1000 * 60)) / 1000);
 
@@ -62,9 +59,8 @@ client.getUptime = function () {
 
 // MAIN BOOTSTRAP FUNCTION
 async function bootstrap() {
-
     // Load commands
-    const foldersPath = path.join(__dirname, 'commands');
+    const foldersPath = path.join(__dirname, "commands");
     const loadedCommands = await loadCommandsFromFolder(foldersPath);
 
     for (const { command, filePath } of loadedCommands) {
@@ -82,11 +78,15 @@ async function bootstrap() {
         client.commandPaths.set(commandName, filePath);
     }
 
-    logger.info(`Loaded ${loadedCommands.length} commands and ${devCommands.length} development commands`);
+    logger.info(
+        `Loaded ${loadedCommands.length} commands and ${devCommands.length} development commands`,
+    );
 
     // Load handlers
-    const handlersPath = path.join(__dirname, 'handlers');
-    const handlerFiles = fs.readdirSync(handlersPath).filter(file => file.endsWith('.js'));
+    const handlersPath = path.join(__dirname, "handlers");
+    const handlerFiles = fs
+        .readdirSync(handlersPath)
+        .filter((file) => file.endsWith(".js"));
 
     let loadedHandlers = 0;
 
@@ -101,8 +101,8 @@ async function bootstrap() {
             }
 
             const handlerModule = await import(pathToFileURL(filePath).href);
-            let name = file.replace('.js', '');
-            name = name.replace(/handler$/, 'Handler');
+            let name = file.replace(".js", "");
+            name = name.replace(/handler$/, "Handler");
 
             client.handlers[name] = handlerModule.default ?? handlerModule;
 
@@ -114,11 +114,15 @@ async function bootstrap() {
     }
 
     logger.info(`Loaded ${loadedHandlers} handlers`);
-    logger.info(`Available handlers: ${Object.keys(client.handlers).join(', ')}`);
+    logger.info(
+        `Available handlers: ${Object.keys(client.handlers).join(", ")}`,
+    );
 
     // Load events
-    const eventsPath = path.join(__dirname, 'events');
-    const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
+    const eventsPath = path.join(__dirname, "events");
+    const eventFiles = fs
+        .readdirSync(eventsPath)
+        .filter((file) => file.endsWith(".js"));
 
     let loadedEvents = 0;
 
@@ -129,7 +133,9 @@ async function bootstrap() {
             const event = eventModule.default ?? eventModule;
 
             if (!event.name || !event.execute) {
-                logger.warn(`Event ${file} is missing "name" or "execute" property`);
+                logger.warn(
+                    `Event ${file} is missing "name" or "execute" property`,
+                );
                 continue;
             }
 
@@ -138,7 +144,9 @@ async function bootstrap() {
                     try {
                         event.execute(...args, client);
                     } catch (err: any) {
-                        logger.error(`Event ${event.name} threw error: ${err.message}`);
+                        logger.error(
+                            `Event ${event.name} threw error: ${err.message}`,
+                        );
                     }
                 });
             } else {
@@ -146,7 +154,9 @@ async function bootstrap() {
                     try {
                         event.execute(...args, client);
                     } catch (err: any) {
-                        logger.error(`Event ${event.name} threw error: ${err.message}`);
+                        logger.error(
+                            `Event ${event.name} threw error: ${err.message}`,
+                        );
                     }
                 });
             }
@@ -164,8 +174,8 @@ async function bootstrap() {
 
     // Activity
     client.once(Events.ClientReady, () => {
-        client.user?.setActivity('/help - Get started', { type: 'LISTENING' });
-        logger.debug('Bot activity set');
+        client.user?.setActivity("/help - Get started", { type: "LISTENING" });
+        logger.debug("Bot activity set");
     });
 
     // Game managers
@@ -175,11 +185,11 @@ async function bootstrap() {
 
     // Login
     await client.login(process.env.TOKEN);
-    logger.info('Successfully logged in to Discord');
+    logger.info("Successfully logged in to Discord");
 }
 
 // Start bootstrap
-bootstrap().catch(err => {
+bootstrap().catch((err) => {
     logger.error(`Fatal startup error: ${err.message}`);
     process.exit(1);
 });

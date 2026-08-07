@@ -1,5 +1,5 @@
 // Player.ts
-import { KaisenRole } from "../types/game.js";
+import type { KaisenRole } from "../types/game.js";
 
 export default class Player {
     discordId: string;

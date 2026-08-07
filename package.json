@@ -10,7 +10,8 @@
     "deploy:global": "npm run build && node dist/deploy-commands.js --global",
     "lint": "biome lint src",
     "lint:fix": "biome lint --write src",
-    "build": "tsc"
+    "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
+    "build": "npm run clean && tsc"
   },
   "keywords": [
     "discord",

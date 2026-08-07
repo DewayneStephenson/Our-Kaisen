@@ -4,5 +4,5 @@ import { handleMissionButton } from "./missionComponentHandler.js";
 export default {
     async handle(interaction: ButtonInteraction, client: Client) {
         return handleMissionButton(interaction, client);
-    }
+    },
 };

@@ -1,8 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import logger from "./logger.js"; // bundler mode: no .js extension
 
-import { fileURLToPath, pathToFileURL } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -21,7 +21,7 @@ export async function loadCommandsFromFolder(foldersPath: string) {
 
         // If folder → recurse
         if (stat.isDirectory()) {
-            results.push(...await loadCommandsFromFolder(fullPath));
+            results.push(...(await loadCommandsFromFolder(fullPath)));
             continue;
         }
 
@@ -40,7 +40,6 @@ export async function loadCommandsFromFolder(foldersPath: string) {
             command.filePath = fullPath;
 
             results.push({ command, filePath: fullPath });
-
         } catch (err: any) {
             logger.error(`Failed to load command ${fullPath}: ${err.message}`);
         }

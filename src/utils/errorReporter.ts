@@ -1,4 +1,4 @@
-import * as logger from './logger.js';
+import * as logger from "./logger.js";
 
 /**
  * Centralized error reporter for handling and logging errors.
@@ -12,12 +12,14 @@ export const errorReporter = {
      * @param metadata - Additional metadata (user ID, command name, etc.)
      */
     report(error: Error, context: string, metadata: Record<string, any> = {}) {
-        const contextStr = context ? ` in ${context}` : '';
+        const contextStr = context ? ` in ${context}` : "";
         const metadataStr =
-            Object.keys(metadata).length > 0 ? ` | ${JSON.stringify(metadata)}` : '';
+            Object.keys(metadata).length > 0
+                ? ` | ${JSON.stringify(metadata)}`
+                : "";
 
         logger.error(`Error${contextStr}: ${error.message}${metadataStr}`);
-        logger.debug(error.stack ?? 'No stack trace available');
+        logger.debug(error.stack ?? "No stack trace available");
 
         // TODO: Extend this to send to external error tracking service
         // Example: Sentry.captureException(error, { contexts: { metadata } });
@@ -30,9 +32,11 @@ export const errorReporter = {
      */
     warn(message: string, metadata: Record<string, any> = {}) {
         const metadataStr =
-            Object.keys(metadata).length > 0 ? ` | ${JSON.stringify(metadata)}` : '';
+            Object.keys(metadata).length > 0
+                ? ` | ${JSON.stringify(metadata)}`
+                : "";
         logger.warn(`${message}${metadataStr}`);
-    }
+    },
 };
 
 export default errorReporter;

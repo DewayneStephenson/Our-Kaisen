@@ -13,7 +13,7 @@ export function generateBotUser(): BotUser {
     const bot: BotUser = {
         id,
         name: `Bot ${botCounter}`,
-        isBot: true
+        isBot: true,
     };
 
     botCounter++;

@@ -1,16 +1,15 @@
 import type { ChatInputCommandInteraction, Client } from "discord.js";
-import Game from "../game/Game.js";
-import Player from "../game/Player.js";
 import GameRoleManager from "../game/managers/GameRoleManager.js";
 import MissionManager from "../game/managers/MissionManager.js";
+import Player from "../game/Player.js";
+import type Lobby from "../lobby/Lobby.js";
 import RoleManager, { type RoleKey } from "../lobby/LobbyRoleManager.js";
-import Lobby from "../lobby/Lobby.js";
+import type { KaisenRole } from "../types/game.js";
 import { EmbedCreator } from "../ui/EmbedCreator.js";
 import { buildPlanningComponents } from "../ui/MissionComponents.js";
-import { scheduleMissionTimer } from "./missionTimers.js";
 import { createGameChannels, postGameLog } from "./gameChannels.js";
-import type { KaisenRole } from "../types/game.js";
 import * as logger from "./logger.js";
+import { scheduleMissionTimer } from "./missionTimers.js";
 
 type StartGameResult = {
     success: boolean;
@@ -81,7 +80,7 @@ export async function startGameSession(
     const missionManager = new MissionManager(game);
     missionManager.beginPlanning();
 
-    let channelResult;
+    let channelResult: Awaited<ReturnType<typeof createGameChannels>>;
     try {
         channelResult = await createGameChannels(interaction, game);
     } catch (error) {

@@ -1,9 +1,7 @@
-import {
-    Collection
-} from "discord.js";
+import { Collection } from "discord.js";
 import LobbyManager from "../game/LobbyManager";
-import RoleManager from "../game/RoleManager";
 import GameManager from "../game/managers/GameManager.ts";
+import RoleManager from "../game/RoleManager";
 
 declare module "discord.js" {
     interface Client {
@@ -17,6 +15,6 @@ declare module "discord.js" {
         lobbyManager: LobbyManager;
         roleManager: typeof RoleManager;
         gameRegistry: gameRegistry;
-        gameManager: GameManager
+        gameManager: GameManager;
     }
 }

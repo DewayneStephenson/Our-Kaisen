@@ -38,17 +38,22 @@ export default class CommandUsageTracker {
         try {
             if (fs.existsSync(STATS_FILE)) {
                 const raw = fs.readFileSync(STATS_FILE, "utf8");
-                const parsed: Record<string, SerializedCommandStat> = JSON.parse(raw);
+                const parsed: Record<string, SerializedCommandStat> =
+                    JSON.parse(raw);
 
                 for (const [command, stat] of Object.entries(parsed)) {
                     this.stats.set(command, {
                         count: stat.count ?? 0,
-                        lastUsed: stat.lastUsed ? new Date(stat.lastUsed) : null,
-                        users: new Set(stat.users ?? [])
+                        lastUsed: stat.lastUsed
+                            ? new Date(stat.lastUsed)
+                            : null,
+                        users: new Set(stat.users ?? []),
                     });
                 }
 
-                logger.debug(`Loaded ${this.stats.size} tracked commands from file`);
+                logger.debug(
+                    `Loaded ${this.stats.size} tracked commands from file`,
+                );
             }
         } catch (error: any) {
             logger.warn(`Failed to load command stats: ${error.message}`);
@@ -66,12 +71,18 @@ export default class CommandUsageTracker {
                 for (const [command, stat] of this.stats.entries()) {
                     data[command] = {
                         count: stat.count,
-                        lastUsed: stat.lastUsed ? stat.lastUsed.toISOString() : null,
-                        users: Array.from(stat.users)
+                        lastUsed: stat.lastUsed
+                            ? stat.lastUsed.toISOString()
+                            : null,
+                        users: Array.from(stat.users),
                     };
                 }
 
-                fs.writeFileSync(STATS_FILE, JSON.stringify(data, null, 2), "utf8");
+                fs.writeFileSync(
+                    STATS_FILE,
+                    JSON.stringify(data, null, 2),
+                    "utf8",
+                );
             } catch (error: any) {
                 logger.warn(`Failed to save command stats: ${error.message}`);
             }
@@ -87,7 +98,7 @@ export default class CommandUsageTracker {
             stat = {
                 count: 0,
                 lastUsed: null,
-                users: new Set()
+                users: new Set(),
             };
             this.stats.set(commandName, stat);
         }
@@ -120,7 +131,7 @@ export default class CommandUsageTracker {
                 name,
                 executions: stat.count,
                 users: stat.users.size,
-                lastUsed: stat.lastUsed
+                lastUsed: stat.lastUsed,
             }))
             .sort((a, b) => b.executions - a.executions)
             .slice(0, limit);
@@ -142,7 +153,7 @@ export default class CommandUsageTracker {
             result[name] = {
                 executions: stat.count,
                 users: stat.users.size,
-                lastUsed: stat.lastUsed
+                lastUsed: stat.lastUsed,
             };
         }
 
@@ -157,7 +168,7 @@ export default class CommandUsageTracker {
         const totalCommands = this.stats.size;
         const totalExecutions = [...this.stats.values()].reduce(
             (sum, stat) => sum + stat.count,
-            0
+            0,
         );
 
         logger.info(`=== Command Usage Stats ===`);
@@ -168,7 +179,7 @@ export default class CommandUsageTracker {
             logger.info("Top 5 commands:");
             topCommands.slice(0, 5).forEach((cmd, i) => {
                 logger.info(
-                    `  ${i + 1}. /${cmd.name} - ${cmd.executions} uses (${cmd.users} unique users)`
+                    `  ${i + 1}. /${cmd.name} - ${cmd.executions} uses (${cmd.users} unique users)`,
                 );
             });
         }

@@ -1,18 +1,21 @@
 import {
-    EmbedBuilder,
-    SlashCommandBuilder,
     type ChatInputCommandInteraction,
     type Client,
+    EmbedBuilder,
     MessageFlags,
-    PermissionFlagsBits
+    PermissionFlagsBits,
+    SlashCommandBuilder,
 } from "discord.js";
-
-import Player from "../../game/Player.js";
-import Game from "../../game/Game.js";
+import type Game from "../../game/Game.js";
+import type Player from "../../game/Player.js";
 import RoleManager from "../../lobby/LobbyRoleManager.js";
 import * as logger from "../../utils/logger.js";
 
-function resolveBotTarget(input: string, botName: string, botId: string): boolean {
+function resolveBotTarget(
+    input: string,
+    botName: string,
+    botId: string,
+): boolean {
     const normalizedInput = input.trim().toLowerCase();
     const normalizedName = botName.trim().toLowerCase();
     const botNumberMatch = normalizedName.match(/^bot\s+(\d+)$/);
@@ -42,84 +45,96 @@ function chunk<T>(values: T[], size: number): T[][] {
 }
 
 function buildBotEmbed(game: Game, player: Player, allPlayers: Player[]) {
-    const botName = game.lobby.botNames.get(player.discordId) ?? player.username;
+    const botName =
+        game.lobby.botNames.get(player.discordId) ?? player.username;
     const role = player.role;
     const visiblePlayers = player.getVisibleTeammates(allPlayers);
     const isGojo = role?.roleName === RoleManager.ROLES.gojo.name;
     const teamLabel = isGojo ? "Enemies" : "Teammates";
-    const emptyTeamLabel = isGojo ? "No visible enemies." : "No visible teammates.";
+    const emptyTeamLabel = isGojo
+        ? "No visible enemies."
+        : "No visible teammates.";
     const powerText = role?.power
         ? `${role.power.PowerName} (${role.power.uses} use${role.power.uses === 1 ? "" : "s"})`
         : "No power.";
     const expeditionVote = game.expeditionVotes[player.discordId];
     const activeMissionVote = game.missionVotes[player.discordId];
     const voteStatus = [
-        `Expedition: ${expeditionVote ? expeditionVote === "approve" ? "Approve" : "Reject" : "Not cast"}`,
-        `Mission: ${activeMissionVote ? activeMissionVote === "pass" ? "Succeed" : "Fail" : "Not cast"}`
+        `Expedition: ${expeditionVote ? (expeditionVote === "approve" ? "Approve" : "Reject") : "Not cast"}`,
+        `Mission: ${activeMissionVote ? (activeMissionVote === "pass" ? "Succeed" : "Fail") : "Not cast"}`,
     ].join("\n");
-    const missionProgress = `${game.missionResults.filter(result => result !== null).length}/${game.missionCount} resolved`;
+    const missionProgress = `${game.missionResults.filter((result) => result !== null).length}/${game.missionCount} resolved`;
     const missionDecision = game.missionResults.length
         ? game.missionResults
-            .map((result, index) => {
-                const vote = game.missionVoteHistory[index]?.[player.discordId];
-                const voteText = vote
-                    ? vote === "pass" ? "✅ succeed" : "❌ fail"
-                    : "did not participate";
+              .map((result, index) => {
+                  const vote =
+                      game.missionVoteHistory[index]?.[player.discordId];
+                  const voteText = vote
+                      ? vote === "pass"
+                          ? "✅ succeed"
+                          : "❌ fail"
+                      : "did not participate";
 
-                return `${index + 1}. ${formatMissionStatus(result)} — ${voteText}`;
-            })
-            .join("\n")
+                  return `${index + 1}. ${formatMissionStatus(result)} — ${voteText}`;
+              })
+              .join("\n")
         : "No mission decisions yet.";
-    const sealingAssassin = game.players.find(currentPlayer => currentPlayer.discordId === game.sealingAssassinId);
-    const sealingTarget = game.players.find(currentPlayer => currentPlayer.discordId === game.sealingTargetId);
+    const sealingAssassin = game.players.find(
+        (currentPlayer) => currentPlayer.discordId === game.sealingAssassinId,
+    );
+    const sealingTarget = game.players.find(
+        (currentPlayer) => currentPlayer.discordId === game.sealingTargetId,
+    );
     const sealingStatus = game.winnerAlignment
         ? `${game.winnerAlignment}s won.${sealingAssassin && sealingTarget ? ` ${sealingAssassin.username} selected ${sealingTarget.username}.` : ""}`
         : "Not resolved.";
 
     return new EmbedBuilder()
         .setTitle(`${botName} diagnostics`)
-        .setColor(0x5865F2)
+        .setColor(0x5865f2)
         .addFields(
             {
                 name: "ID",
                 value: player.discordId,
-                inline: true
+                inline: true,
             },
             {
                 name: "Role Name",
                 value: role?.roleName ?? "Unknown role",
-                inline: true
+                inline: true,
             },
             {
                 name: "Power",
                 value: powerText,
-                inline: false
+                inline: false,
             },
             {
                 name: teamLabel,
-                value: visiblePlayers.length ? visiblePlayers.join("\n") : emptyTeamLabel,
-                inline: false
+                value: visiblePlayers.length
+                    ? visiblePlayers.join("\n")
+                    : emptyTeamLabel,
+                inline: false,
             },
             {
                 name: "Current Votes",
                 value: voteStatus,
-                inline: true
+                inline: true,
             },
             {
                 name: "Missions In",
                 value: missionProgress,
-                inline: true
+                inline: true,
             },
             {
                 name: "My Mission Decisions",
                 value: missionDecision,
-                inline: false
+                inline: false,
             },
             {
                 name: "Sealing",
                 value: sealingStatus,
-                inline: false
-            }
+                inline: false,
+            },
         )
         .setFooter({ text: `Game phase: ${game.phase}` });
 }
@@ -130,30 +145,32 @@ export default {
     data: new SlashCommandBuilder()
         .setName("log_bots")
         .setDescription("Log bot roles and teammates from the active game")
-        .addStringOption(option =>
+        .addStringOption((option) =>
             option
                 .setName("target")
                 .setDescription("Log every bot or a specific bot")
                 .addChoices(
                     { name: "Every bot", value: "all" },
-                    { name: "Specific bot", value: "specific" }
+                    { name: "Specific bot", value: "specific" },
                 )
-                .setRequired(true)
+                .setRequired(true),
         )
-        .addStringOption(option =>
+        .addStringOption((option) =>
             option
                 .setName("bot")
-                .setDescription("Bot name, number, or Discord id when target is specific")
-                .setRequired(false)
+                .setDescription(
+                    "Bot name, number, or Discord id when target is specific",
+                )
+                .setRequired(false),
         ),
 
     async execute(interaction: ChatInputCommandInteraction, client: Client) {
         const game = client.gameRegistry.getGame(interaction.channelId);
 
-        if (!game || !game.started) {
+        if (!game?.started) {
             return interaction.reply({
                 content: "No active game exists in this channel.",
-                flags: MessageFlags.Ephemeral
+                flags: MessageFlags.Ephemeral,
             });
         }
 
@@ -161,12 +178,14 @@ export default {
         const botQuery = interaction.options.getString("bot");
 
         const players = game.players as Player[];
-        const bots = players.filter((player: Player) => game.lobby.botNames.has(player.discordId));
+        const bots = players.filter((player: Player) =>
+            game.lobby.botNames.has(player.discordId),
+        );
 
         if (!bots.length) {
             return interaction.reply({
                 content: "No bots were found in the active game.",
-                flags: MessageFlags.Ephemeral
+                flags: MessageFlags.Ephemeral,
             });
         }
 
@@ -175,34 +194,42 @@ export default {
         if (target === "specific") {
             if (!botQuery) {
                 return interaction.reply({
-                    content: "Provide a bot name, number, or Discord id in the bot option.",
-                    flags: MessageFlags.Ephemeral
+                    content:
+                        "Provide a bot name, number, or Discord id in the bot option.",
+                    flags: MessageFlags.Ephemeral,
                 });
             }
 
             selectedBots = bots.filter((player: Player) => {
-                const botName = game.lobby.botNames.get(player.discordId) ?? player.username;
+                const botName =
+                    game.lobby.botNames.get(player.discordId) ??
+                    player.username;
                 return resolveBotTarget(botQuery, botName, player.discordId);
             });
 
             if (!selectedBots.length) {
                 return interaction.reply({
-                    content: `No bot matched \"${botQuery}\".`,
-                    flags: MessageFlags.Ephemeral
+                    content: `No bot matched "${botQuery}".`,
+                    flags: MessageFlags.Ephemeral,
                 });
             }
         }
 
-        const embeds = selectedBots.map(player => buildBotEmbed(game, player, players));
+        const embeds = selectedBots.map((player) =>
+            buildBotEmbed(game, player, players),
+        );
 
         for (const player of selectedBots) {
-            const botName = game.lobby.botNames.get(player.discordId) ?? player.username;
+            const botName =
+                game.lobby.botNames.get(player.discordId) ?? player.username;
             const roleName = player.role?.roleName ?? "unknown role";
             const teammates = player.getVisibleTeammates(game.players);
-            const teammateText = teammates.length ? teammates.join(", ") : "none";
+            const teammateText = teammates.length
+                ? teammates.join(", ")
+                : "none";
 
             logger.info(
-                `[${interaction.channelId}] ${botName} (${player.discordId}) has role ${roleName}; teammates: ${teammateText}`
+                `[${interaction.channelId}] ${botName} (${player.discordId}) has role ${roleName}; teammates: ${teammateText}`,
             );
         }
 
@@ -211,14 +238,14 @@ export default {
         await interaction.reply({
             content: `Showing ${selectedBots.length} bot diagnostic embed(s).`,
             embeds: firstBatch,
-            flags: MessageFlags.Ephemeral
+            flags: MessageFlags.Ephemeral,
         });
 
         for (const batch of otherBatches) {
             await interaction.followUp({
                 embeds: batch,
-                flags: MessageFlags.Ephemeral
+                flags: MessageFlags.Ephemeral,
             });
         }
-    }
+    },
 };

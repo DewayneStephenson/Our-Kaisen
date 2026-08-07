@@ -1,11 +1,11 @@
 import {
+    type ChatInputCommandInteraction,
+    type Client,
     MessageFlags,
     SlashCommandBuilder,
-    type ChatInputCommandInteraction,
-    type Client
 } from "discord.js";
 
-import  {EmbedCreator} from "../../../ui/EmbedCreator.js"
+import { EmbedCreator } from "../../../ui/EmbedCreator.js";
 
 export default {
     data: new SlashCommandBuilder()
@@ -18,20 +18,22 @@ export default {
         if (!lobby) {
             return interaction.reply({
                 content: "No lobby exists here.",
-                flags: MessageFlags.Ephemeral
+                flags: MessageFlags.Ephemeral,
             });
         }
 
         const updatedLobby = client.lobbyManager.removePlayer(
             interaction.channelId,
-            interaction.user.id
+            interaction.user.id,
         );
 
         if (!updatedLobby) {
-            try { await lobby.message?.delete(); } catch {}
+            try {
+                await lobby.message?.delete();
+            } catch {}
             return interaction.reply({
                 content: "Lobby deleted due to having no players.",
-                flags: MessageFlags.Ephemeral
+                flags: MessageFlags.Ephemeral,
             });
         }
 
@@ -43,7 +45,7 @@ export default {
 
         return interaction.reply({
             content: "You left the lobby.",
-            flags: MessageFlags.Ephemeral
+            flags: MessageFlags.Ephemeral,
         });
-    }
+    },
 };

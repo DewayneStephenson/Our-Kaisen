@@ -1,9 +1,11 @@
-import * as logger from "./logger.js";
 import type {
-    RepliableInteraction,
+    InteractionReplyOptions,
+    InteractionResponse,
     Message,
-    InteractionResponse
+    RepliableInteraction,
 } from "discord.js";
+import { MessageFlags } from "discord.js";
+import * as logger from "./logger.js";
 
 /**
  * Sends an error reply to an interaction.
@@ -11,10 +13,13 @@ import type {
  */
 export async function sendErrorReply(
     interaction: RepliableInteraction,
-    message: string
+    message: string,
 ): Promise<Message<boolean> | InteractionResponse<boolean> | undefined> {
     try {
-        const reply = { content: message, ephemeral: true };
+        const reply = {
+            content: message,
+            flags: MessageFlags.Ephemeral,
+        } satisfies InteractionReplyOptions;
 
         if (interaction.replied || interaction.deferred) {
             return interaction.followUp(reply);

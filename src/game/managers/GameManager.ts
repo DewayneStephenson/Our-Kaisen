@@ -1,13 +1,13 @@
 // GameManager.ts
-import Game from "../Game.js";
-import Lobby from "../../lobby/Lobby.js"
-import PlayerManager from "./PlayerManager.js";
-import RoleManager from "./GameRoleManager.js";
-import PhaseManager from "./PhaseManager.js";
-import VoteManager from "./VoteManager.js";
-import MissionManager from "./MissionManager.js";
-import LobbyManager from "../../lobby/LobbyManager.js";
 
+import type Lobby from "../../lobby/Lobby.js";
+import type LobbyManager from "../../lobby/LobbyManager.js";
+import type Game from "../Game.js";
+import RoleManager from "./GameRoleManager.js";
+import MissionManager from "./MissionManager.js";
+import PhaseManager from "./PhaseManager.js";
+import PlayerManager from "./PlayerManager.js";
+import VoteManager from "./VoteManager.js";
 
 export default class GameManager {
     game: Game;
@@ -17,10 +17,10 @@ export default class GameManager {
     votes: VoteManager;
     missions: MissionManager;
 
-    constructor(game: Game,lobby: Lobby, lobbyManager: LobbyManager) {
+    constructor(game: Game, lobby: Lobby, lobbyManager: LobbyManager) {
         this.game = game;
 
-        this.players = new PlayerManager(lobby,lobbyManager);
+        this.players = new PlayerManager(lobby, lobbyManager);
         this.roles = new RoleManager(game.roles);
         this.phases = new PhaseManager(game.phase);
         this.votes = new VoteManager(game.votes);
@@ -65,7 +65,7 @@ export default class GameManager {
         if (!check.success) return check;
 
         const result = this.missions.resolve();
-        const missionIndex = this.game.missionResults.findIndex(mission => mission === null);
+        const missionIndex = this.game.missionResults.indexOf(null);
 
         if (missionIndex !== -1) {
             this.game.missionResults[missionIndex] = result.data.success;

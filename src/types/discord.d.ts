@@ -1,6 +1,6 @@
 import RoleManager from "../game/RoleManager";
 
-declare module 'discord.js' {
+declare module "discord.js" {
     interface Client {
         commands: Map<string, any>;
         cooldowns: Map<string, Map<string, number>>;
@@ -13,9 +13,8 @@ declare module 'discord.js' {
             autocompleteHandler?: any;
         };
         getUptime: () => string;
-        
+
         roleManager: typeof RoleManager;
         RoleKey: keyof typeof RoleManager.ROLES;
-        
     }
 }

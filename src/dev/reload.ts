@@ -1,19 +1,19 @@
-import {
-    SlashCommandBuilder,
-    type ChatInputCommandInteraction,
-    type Client
-} from "discord.js";
 import { pathToFileURL } from "node:url";
+import {
+    type ChatInputCommandInteraction,
+    type Client,
+    SlashCommandBuilder,
+} from "discord.js";
 
 export default {
     data: new SlashCommandBuilder()
         .setName("reload")
         .setDescription("Reload a command")
-        .addStringOption(option =>
+        .addStringOption((option) =>
             option
                 .setName("command")
                 .setDescription("Command name")
-                .setRequired(true)
+                .setRequired(true),
         ),
 
     async execute(interaction: ChatInputCommandInteraction, client: Client) {
@@ -31,7 +31,9 @@ export default {
             const newCmd = imported.default ?? imported;
 
             if (!newCmd.data || !newCmd.execute) {
-                return interaction.reply(`Reloaded module for \`${name}\` is not a valid command.`);
+                return interaction.reply(
+                    `Reloaded module for \`${name}\` is not a valid command.`,
+                );
             }
 
             newCmd.filePath = cmd.filePath;
@@ -39,8 +41,9 @@ export default {
 
             return interaction.reply(`Reloaded \`${name}\`.`);
         } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
+            const message =
+                error instanceof Error ? error.message : String(error);
             return interaction.reply(`Error reloading \`${name}\`: ${message}`);
         }
-    }
+    },
 };

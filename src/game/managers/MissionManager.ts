@@ -1,5 +1,5 @@
-import Game from "../Game.js";
 import RoleManager from "../../lobby/LobbyRoleManager.js";
+import type Game from "../Game.js";
 
 export type ExpeditionVote = "approve" | "reject";
 export type MissionVote = "pass" | "fail";
@@ -10,7 +10,7 @@ const OFFICIAL_MISSION_TEAM_SIZES: Record<number, number[]> = {
     7: [2, 3, 3, 4, 4],
     8: [3, 4, 4, 5, 5],
     9: [3, 4, 4, 5, 5],
-    10: [3, 4, 4, 5, 5]
+    10: [3, 4, 4, 5, 5],
 };
 
 const IMPROVISED_MISSION_TEAM_SIZES: Record<number, number[]> = {
@@ -18,7 +18,7 @@ const IMPROVISED_MISSION_TEAM_SIZES: Record<number, number[]> = {
     12: [4, 5, 6, 6, 7],
     13: [4, 5, 6, 7, 7],
     14: [5, 6, 6, 7, 8],
-    15: [5, 6, 7, 8, 8]
+    15: [5, 6, 7, 8, 8],
 };
 
 const REQUIRED_FAILS: Record<number, number[]> = {
@@ -47,7 +47,10 @@ export function getMissionTeamSizes(playerCount: number): number[] {
     return OFFICIAL_MISSION_TEAM_SIZES[10];
 }
 
-export function getRequiredFails(playerCount: number, missionNumber: number): number {
+export function getRequiredFails(
+    playerCount: number,
+    missionNumber: number,
+): number {
     return REQUIRED_FAILS[playerCount]?.[missionNumber - 1] ?? 1;
 }
 
@@ -59,7 +62,7 @@ export default class MissionManager {
     }
 
     getCurrentMissionIndex() {
-        return this.game.missionResults.findIndex(result => result === null);
+        return this.game.missionResults.indexOf(null);
     }
 
     getCurrentMissionNumber() {
@@ -72,11 +75,18 @@ export default class MissionManager {
     }
 
     getRequiredTeamSize() {
-        return getMissionTeamSizes(this.game.players.length)[this.getCurrentMissionIndex()] ?? 0;
+        return (
+            getMissionTeamSizes(this.game.players.length)[
+                this.getCurrentMissionIndex()
+            ] ?? 0
+        );
     }
 
     getRequiredFails() {
-        return getRequiredFails(this.game.players.length, this.getCurrentMissionNumber());
+        return getRequiredFails(
+            this.game.players.length,
+            this.getCurrentMissionNumber(),
+        );
     }
 
     beginPlanning() {
@@ -116,7 +126,10 @@ export default class MissionManager {
     }
 
     allPlayersVoted() {
-        return Object.keys(this.game.expeditionVotes).length >= this.game.players.length;
+        return (
+            Object.keys(this.game.expeditionVotes).length >=
+            this.game.players.length
+        );
     }
 
     approvalPassed() {
@@ -139,7 +152,9 @@ export default class MissionManager {
             return { success: false, reason: "not_in_expedition" };
         }
 
-        const player = this.game.players.find(currentPlayer => currentPlayer.discordId === playerId);
+        const player = this.game.players.find(
+            (currentPlayer) => currentPlayer.discordId === playerId,
+        );
 
         if (!player?.role) {
             return { success: false, reason: "player_not_found" };
@@ -154,7 +169,9 @@ export default class MissionManager {
     }
 
     allExpeditionMembersVoted() {
-        return this.game.expedition.every(playerId => playerId in this.game.missionVotes);
+        return this.game.expedition.every(
+            (playerId) => playerId in this.game.missionVotes,
+        );
     }
 
     private shuffleMissionVotes(votes: MissionVote[]) {
@@ -162,16 +179,27 @@ export default class MissionManager {
 
         for (let index = shuffledVotes.length - 1; index > 0; index--) {
             const randomIndex = Math.floor(Math.random() * (index + 1));
-            [shuffledVotes[index], shuffledVotes[randomIndex]] = [shuffledVotes[randomIndex], shuffledVotes[index]];
+            [shuffledVotes[index], shuffledVotes[randomIndex]] = [
+                shuffledVotes[randomIndex],
+                shuffledVotes[index],
+            ];
         }
 
         return shuffledVotes;
     }
 
     private getSealingAssassin() {
-        const curses = this.game.players.filter(player => player.role?.alignment === "Curse");
-        const stitchedFace = curses.find(player => player.role.roleName === RoleManager.ROLES.kenny.name);
-        return stitchedFace ?? curses[Math.floor(Math.random() * curses.length)] ?? null;
+        const curses = this.game.players.filter(
+            (player) => player.role?.alignment === "Curse",
+        );
+        const stitchedFace = curses.find(
+            (player) => player.role.roleName === RoleManager.ROLES.kenny.name,
+        );
+        return (
+            stitchedFace ??
+            curses[Math.floor(Math.random() * curses.length)] ??
+            null
+        );
     }
 
     beginSealing() {
@@ -192,16 +220,19 @@ export default class MissionManager {
             return { success: false, reason: "not_assassin" };
         }
 
-        const target = this.game.players.find(player => player.discordId === targetId);
+        const target = this.game.players.find(
+            (player) => player.discordId === targetId,
+        );
 
         if (!target) {
             return { success: false, reason: "target_not_found" };
         }
 
         this.game.sealingTargetId = target.discordId;
-        this.game.winnerAlignment = target.role.roleName === RoleManager.ROLES.gojo.name
-            ? "Curse"
-            : "Sorcerer";
+        this.game.winnerAlignment =
+            target.role.roleName === RoleManager.ROLES.gojo.name
+                ? "Curse"
+                : "Sorcerer";
         return { success: true };
     }
 
@@ -215,15 +246,20 @@ export default class MissionManager {
     }
 
     resolveMission() {
-        const fails = Object.values(this.game.missionVotes).filter(vote => vote === "fail").length;
+        const fails = Object.values(this.game.missionVotes).filter(
+            (vote) => vote === "fail",
+        ).length;
         const requiredFails = this.getRequiredFails();
         const success = fails < requiredFails;
         const missionIndex = this.getCurrentMissionIndex();
 
         if (missionIndex !== -1) {
             this.game.missionResults[missionIndex] = success;
-            this.game.missionVoteHistory[missionIndex] = { ...this.game.missionVotes };
-            this.game.missionVoteResults[missionIndex] = this.shuffleMissionVotes(Object.values(this.game.missionVotes));
+            this.game.missionVoteHistory[missionIndex] = {
+                ...this.game.missionVotes,
+            };
+            this.game.missionVoteResults[missionIndex] =
+                this.shuffleMissionVotes(Object.values(this.game.missionVotes));
         }
 
         this.rotateLeader();
@@ -231,8 +267,12 @@ export default class MissionManager {
         this.game.expeditionVotes = {};
         this.game.missionVotes = {};
 
-        const successes = this.game.missionResults.filter(result => result === true).length;
-        const failures = this.game.missionResults.filter(result => result === false).length;
+        const successes = this.game.missionResults.filter(
+            (result) => result === true,
+        ).length;
+        const failures = this.game.missionResults.filter(
+            (result) => result === false,
+        ).length;
 
         if (successes >= 3) {
             this.beginSealing();
@@ -250,8 +290,8 @@ export default class MissionManager {
                 requiredFails,
                 success,
                 missionNumber: missionIndex + 1,
-                votes: this.game.missionVoteResults[missionIndex] ?? []
-            }
+                votes: this.game.missionVoteResults[missionIndex] ?? [],
+            },
         };
     }
 
