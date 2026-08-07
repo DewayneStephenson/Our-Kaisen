@@ -51,15 +51,30 @@ function buildBotEmbed(game: Game, player: Player, allPlayers: Player[]) {
     const powerText = role?.power
         ? `${role.power.PowerName} (${role.power.uses} use${role.power.uses === 1 ? "" : "s"})`
         : "No power.";
-    const voteTarget = game.votes[player.discordId]
-        ? `<@${game.votes[player.discordId]}>`
-        : "No vote cast.";
+    const expeditionVote = game.expeditionVotes[player.discordId];
+    const activeMissionVote = game.missionVotes[player.discordId];
+    const voteStatus = [
+        `Expedition: ${expeditionVote ? expeditionVote === "approve" ? "Approve" : "Reject" : "Not cast"}`,
+        `Mission: ${activeMissionVote ? activeMissionVote === "pass" ? "Succeed" : "Fail" : "Not cast"}`
+    ].join("\n");
     const missionProgress = `${game.missionResults.filter(result => result !== null).length}/${game.missionCount} resolved`;
     const missionDecision = game.missionResults.length
         ? game.missionResults
-            .map((result, index) => `${index + 1}. ${formatMissionStatus(result)}`)
+            .map((result, index) => {
+                const vote = game.missionVoteHistory[index]?.[player.discordId];
+                const voteText = vote
+                    ? vote === "pass" ? "✅ succeed" : "❌ fail"
+                    : "did not participate";
+
+                return `${index + 1}. ${formatMissionStatus(result)} — ${voteText}`;
+            })
             .join("\n")
         : "No mission decisions yet.";
+    const sealingAssassin = game.players.find(currentPlayer => currentPlayer.discordId === game.sealingAssassinId);
+    const sealingTarget = game.players.find(currentPlayer => currentPlayer.discordId === game.sealingTargetId);
+    const sealingStatus = game.winnerAlignment
+        ? `${game.winnerAlignment}s won.${sealingAssassin && sealingTarget ? ` ${sealingAssassin.username} selected ${sealingTarget.username}.` : ""}`
+        : "Not resolved.";
 
     return new EmbedBuilder()
         .setTitle(`${botName} diagnostics`)
@@ -86,8 +101,8 @@ function buildBotEmbed(game: Game, player: Player, allPlayers: Player[]) {
                 inline: false
             },
             {
-                name: "Votes",
-                value: voteTarget,
+                name: "Current Votes",
+                value: voteStatus,
                 inline: true
             },
             {
@@ -96,8 +111,13 @@ function buildBotEmbed(game: Game, player: Player, allPlayers: Player[]) {
                 inline: true
             },
             {
-                name: "Missions Decision",
+                name: "My Mission Decisions",
                 value: missionDecision,
+                inline: false
+            },
+            {
+                name: "Sealing",
+                value: sealingStatus,
                 inline: false
             }
         )

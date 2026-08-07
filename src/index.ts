@@ -37,7 +37,7 @@ if (!process.env.TOKEN) {
 
 // Create client
 const client = new Client({
-    intents: [GatewayIntentBits.Guilds]
+    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates]
 }) as any;
 
 // Custom client properties

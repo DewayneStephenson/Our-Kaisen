@@ -5,6 +5,10 @@ export interface TimerSettings {
     missionSelectionSeconds: number;
     votingSeconds: number;
     missionSeconds: number;
+    sealingSeconds: number;
+    voiceMuteWindowSeconds: number;
+    phaseMuteEnabled: boolean;
+    phaseChatLockEnabled: boolean;
 }
 
 export interface KaisenRole {
@@ -27,5 +31,6 @@ export interface Profile {
 export interface Power {
     PowerName: string;
     uses: number,
+    revealTiming?: "immediate" | "after_mission" | "private";
     target?(actor: Player, target: Player): string;
 }

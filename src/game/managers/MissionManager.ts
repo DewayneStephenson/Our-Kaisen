@@ -1,4 +1,5 @@
 import Game from "../Game.js";
+import RoleManager from "../../lobby/LobbyRoleManager.js";
 
 export type ExpeditionVote = "approve" | "reject";
 export type MissionVote = "pass" | "fail";
@@ -128,12 +129,79 @@ export default class MissionManager {
             return { success: false, reason: "not_in_expedition" };
         }
 
+        const player = this.game.players.find(currentPlayer => currentPlayer.discordId === playerId);
+
+        if (!player?.role) {
+            return { success: false, reason: "player_not_found" };
+        }
+
+        if (vote === "fail" && player.role.alignment !== "Curse") {
+            return { success: false, reason: "sorcerer_cannot_fail" };
+        }
+
         this.game.missionVotes[playerId] = vote;
         return { success: true };
     }
 
     allExpeditionMembersVoted() {
         return this.game.expedition.every(playerId => playerId in this.game.missionVotes);
+    }
+
+    private shuffleMissionVotes(votes: MissionVote[]) {
+        const shuffledVotes = [...votes];
+
+        for (let index = shuffledVotes.length - 1; index > 0; index--) {
+            const randomIndex = Math.floor(Math.random() * (index + 1));
+            [shuffledVotes[index], shuffledVotes[randomIndex]] = [shuffledVotes[randomIndex], shuffledVotes[index]];
+        }
+
+        return shuffledVotes;
+    }
+
+    private getSealingAssassin() {
+        const curses = this.game.players.filter(player => player.role?.alignment === "Curse");
+        const stitchedFace = curses.find(player => player.role.roleName === RoleManager.ROLES.kenny.name);
+        return stitchedFace ?? curses[Math.floor(Math.random() * curses.length)] ?? null;
+    }
+
+    beginSealing() {
+        const assassin = this.getSealingAssassin();
+
+        this.game.sealingAssassinId = assassin?.discordId ?? null;
+        this.game.sealingTargetId = null;
+        this.game.phase = "SEALING";
+        return { success: assassin !== null };
+    }
+
+    resolveSealingTarget(assassinId: string, targetId: string) {
+        if (this.game.phase !== "SEALING" || this.game.winnerAlignment) {
+            return { success: false, reason: "not_sealing" };
+        }
+
+        if (this.game.sealingAssassinId !== assassinId) {
+            return { success: false, reason: "not_assassin" };
+        }
+
+        const target = this.game.players.find(player => player.discordId === targetId);
+
+        if (!target) {
+            return { success: false, reason: "target_not_found" };
+        }
+
+        this.game.sealingTargetId = target.discordId;
+        this.game.winnerAlignment = target.role.roleName === RoleManager.ROLES.gojo.name
+            ? "Curse"
+            : "Sorcerer";
+        return { success: true };
+    }
+
+    resolveSealingTimeout() {
+        if (this.game.phase !== "SEALING" || this.game.winnerAlignment) {
+            return { success: false, reason: "not_sealing" };
+        }
+
+        this.game.winnerAlignment = "Sorcerer";
+        return { success: true };
     }
 
     resolveMission() {
@@ -144,6 +212,8 @@ export default class MissionManager {
 
         if (missionIndex !== -1) {
             this.game.missionResults[missionIndex] = success;
+            this.game.missionVoteHistory[missionIndex] = { ...this.game.missionVotes };
+            this.game.missionVoteResults[missionIndex] = this.shuffleMissionVotes(Object.values(this.game.missionVotes));
         }
 
         this.rotateLeader();
@@ -151,8 +221,14 @@ export default class MissionManager {
         this.game.expeditionVotes = {};
         this.game.missionVotes = {};
 
-        if (this.getCurrentMissionIndex() === -1) {
+        const successes = this.game.missionResults.filter(result => result === true).length;
+        const failures = this.game.missionResults.filter(result => result === false).length;
+
+        if (successes >= 3) {
+            this.beginSealing();
+        } else if (failures >= 3 || this.getCurrentMissionIndex() === -1) {
             this.game.phase = "SEALING";
+            this.game.winnerAlignment = "Curse";
         } else {
             this.game.phase = "PLANNING";
         }
@@ -162,7 +238,9 @@ export default class MissionManager {
             data: {
                 fails,
                 requiredFails,
-                success
+                success,
+                missionNumber: missionIndex + 1,
+                votes: this.game.missionVoteResults[missionIndex] ?? []
             }
         };
     }

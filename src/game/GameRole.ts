@@ -137,6 +137,7 @@ export class NailAndHammer implements KaisenRole {
     power: Power = {
         PowerName: "Resonance",
         uses: 1,
+        revealTiming: "after_mission",
         target(actor: Player, target: Player) {
             if (target.role.alignment === "Curse") {
                 return `${actor.username} detects ${target.username} is a Curse.`;

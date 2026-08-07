@@ -26,6 +26,18 @@ export function getGame(channelId: string) {
     return games.get(channelId) || null;
 }
 
+export function moveGameToChannel(game: Game, channelId: string) {
+    games.delete(game.channelId);
+    game.channelId = channelId;
+    games.set(channelId, game);
+}
+
 export function deleteGame(channelId: string) {
+    const game = games.get(channelId);
+
+    if (game?.cleanupTimer) {
+        clearTimeout(game.cleanupTimer);
+    }
+
     return games.delete(channelId);
 }

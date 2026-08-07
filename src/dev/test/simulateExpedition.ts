@@ -9,6 +9,7 @@ import {
 import Player from "../../game/Player.js";
 import MissionManager from "../../game/managers/MissionManager.js";
 import { findPlayerByToken, pickRandomPlayers, refreshMissionMessage } from "../../utils/missionDebug.js";
+import { scheduleMissionTimer } from "../../utils/missionTimers.js";
 
 function parseTokens(input: string) {
     return input
@@ -23,22 +24,16 @@ export default {
     data: new SlashCommandBuilder()
         .setName("simulate_expedition")
         .setDescription("Simulate bot expedition selection in planning")
-        .addStringOption(option =>
-            option
-                .setName("mode")
-                .setDescription("Choose expedition randomly or manually")
-                .addChoices(
-                    { name: "Random", value: "random" },
-                    { name: "Manual", value: "manual" }
-                )
-                .setRequired(true)
-        )
-        .addStringOption(option =>
-            option
+        .addSubcommand(subcommand => subcommand
+            .setName("random")
+            .setDescription("Choose a random expedition"))
+        .addSubcommand(subcommand => subcommand
+            .setName("manual")
+            .setDescription("Choose the expedition manually")
+            .addStringOption(option => option
                 .setName("bots")
-                .setDescription("Comma-separated bot names, numbers, or ids for manual selection")
-                .setRequired(false)
-        ),
+                .setDescription("Comma-separated bot names, numbers, or ids")
+                .setRequired(true))),
 
     async execute(interaction: ChatInputCommandInteraction, client: Client) {
         const game = client.gameRegistry.getGame(interaction.channelId);
@@ -57,11 +52,11 @@ export default {
             });
         }
 
-        const mode = interaction.options.getString("mode", true);
+        const mode = interaction.options.getSubcommand();
         const missionManager = new MissionManager(game);
         const requiredTeamSize = missionManager.getRequiredTeamSize();
 
-        let selectedPlayers;
+        let selectedPlayers: Player[];
 
         if (mode === "random") {
             selectedPlayers = pickRandomPlayers(game.players, requiredTeamSize);
@@ -107,6 +102,7 @@ export default {
 
         missionManager.setExpedition(selectedPlayers.map(player => player.discordId));
         missionManager.beginVoting();
+        scheduleMissionTimer(client, game);
 
         await refreshMissionMessage(interaction, game);
 

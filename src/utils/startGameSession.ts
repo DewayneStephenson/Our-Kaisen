@@ -8,6 +8,7 @@ import Lobby from "../lobby/Lobby.js";
 import { EmbedCreator } from "../ui/EmbedCreator.js";
 import { buildPlanningComponents } from "../ui/MissionComponents.js";
 import { scheduleMissionTimer } from "./missionTimers.js";
+import { createGameChannels, postGameLog } from "./gameChannels.js";
 import type { KaisenRole } from "../types/game.js";
 import * as logger from "./logger.js";
 
@@ -17,8 +18,9 @@ type StartGameResult = {
 };
 
 function createGameRoles(roleKeys: RoleKey[]): KaisenRole[] {
-    return roleKeys.map(roleKey => {
-        const RoleClass = RoleManager.ROLES[roleKey].class as new () => KaisenRole;
+    return roleKeys.map((roleKey) => {
+        const RoleClass = RoleManager.ROLES[roleKey]
+            .class as new () => KaisenRole;
         return new RoleClass();
     });
 }
@@ -26,9 +28,13 @@ function createGameRoles(roleKeys: RoleKey[]): KaisenRole[] {
 export async function startGameSession(
     interaction: ChatInputCommandInteraction,
     client: Client,
-    lobby: Lobby
+    lobby: Lobby,
 ): Promise<StartGameResult> {
-    const gameResult = client.gameRegistry.createGame(interaction.channelId, interaction.user.id, lobby);
+    const gameResult = client.gameRegistry.createGame(
+        interaction.channelId,
+        interaction.user.id,
+        lobby,
+    );
 
     if (!gameResult.success || !gameResult.game) {
         let reason = "Unexpected error.";
@@ -62,7 +68,10 @@ export async function startGameSession(
 
     if (!assignmentResult.success) {
         client.gameRegistry.deleteGame(interaction.channelId);
-        return { success: false, message: "Failed to assign roles to players." };
+        return {
+            success: false,
+            message: "Failed to assign roles to players.",
+        };
     }
 
     game.players = players;
@@ -72,6 +81,22 @@ export async function startGameSession(
     const missionManager = new MissionManager(game);
     missionManager.beginPlanning();
 
+    let channelResult;
+    try {
+        channelResult = await createGameChannels(interaction, game);
+    } catch (error) {
+        client.gameRegistry.deleteGame(game.channelId);
+        return {
+            success: false,
+            message: `Could not create game channels: ${error instanceof Error ? error.message : String(error)}`,
+        };
+    }
+
+    if (!channelResult.success) {
+        client.gameRegistry.deleteGame(game.channelId);
+        return { success: false, message: channelResult.message };
+    }
+
     let dmFailures = 0;
 
     for (const player of players) {
@@ -79,50 +104,55 @@ export async function startGameSession(
 
         if (lobby.botNames.has(player.discordId)) {
             logger.info(
-                `[${interaction.channelId}] Bot ${player.username} (${player.discordId}) assigned ${roleName}`
+                `[${interaction.channelId}] Bot ${player.username} (${player.discordId}) assigned ${roleName}`,
             );
             continue;
         }
 
         try {
             const user = await interaction.client.users.fetch(player.discordId);
-            await user.send({ embeds: [EmbedCreator.playerDM(game, player.discordId)] });
+            await user.send({
+                embeds: [EmbedCreator.playerDM(game, player.discordId)],
+            });
         } catch (error) {
             dmFailures++;
             logger.error(
-                `[${interaction.channelId}] Failed to DM ${player.username} (${player.discordId}) with ${roleName}: ${error instanceof Error ? error.message : String(error)}`
-            );
-        }
-    }
-
-    const gameEmbed = EmbedCreator.mission(game);
-    const components = buildPlanningComponents(game);
-
-    if (lobby.message) {
-        try {
-            await lobby.message.edit({ embeds: [gameEmbed], components });
-        } catch (error) {
-            logger.error(
-                `[${interaction.channelId}] Failed to update lobby message: ${error instanceof Error ? error.message : String(error)}`
-            );
-        }
-    } else if (interaction.channel?.isSendable()) {
-        try {
-            await interaction.channel.send({ embeds: [gameEmbed], components });
-        } catch (error) {
-            logger.error(
-                `[${interaction.channelId}] Failed to send game embed: ${error instanceof Error ? error.message : String(error)}`
+                `[${interaction.channelId}] Failed to DM ${player.username} (${player.discordId}) with ${roleName}: ${error instanceof Error ? error.message : String(error)}`,
             );
         }
     }
 
     scheduleMissionTimer(client, game);
 
+    if (lobby.message) {
+        try {
+            await lobby.message.edit({
+                content: `Game moved to <#${channelResult.gameChannel.id}>.`,
+                embeds: [],
+                components: [],
+            });
+        } catch (error) {
+            logger.error(
+                `[${interaction.channelId}] Failed to update lobby message: ${error instanceof Error ? error.message : String(error)}`,
+            );
+        }
+    }
+
+    lobby.message = await channelResult.gameChannel.send({
+        embeds: [EmbedCreator.mission(game)],
+        components: buildPlanningComponents(game),
+    });
+    await postGameLog(
+        game,
+        `🎮 **${lobby.title ?? "Kaisen Game"}** started. First expedition leader: <@${missionManager.getLeader()?.discordId}>.`,
+    );
+
     client.lobbyManager.deleteLobby(interaction.channelId);
 
-    const message = dmFailures > 0
-        ? `Game started. ${dmFailures} player DM(s) failed.`
-        : "Game started. Roles have been distributed.";
+    const message =
+        dmFailures > 0
+            ? `Game started. ${dmFailures} player DM(s) failed.`
+            : "Game started. Roles have been distributed.";
 
     return { success: true, message };
 }

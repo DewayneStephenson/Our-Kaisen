@@ -1,0 +1,146 @@
+import { ChannelType, PermissionFlagsBits, type ChatInputCommandInteraction, type Client, type TextChannel } from "discord.js";
+import type Game from "../game/Game.js";
+import * as logger from "./logger.js";
+import { clearMissionTimer } from "./missionTimers.js";
+import { clearPhaseVoiceMutes } from "./missionVoice.js";
+
+function channelName(title: string, suffix: string) {
+    const slug = title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 85) || "kaisen-game";
+
+    return `${slug}-${suffix}`.slice(0, 100);
+}
+
+export async function createGameChannels(interaction: ChatInputCommandInteraction, game: Game) {
+    if (!interaction.guild) {
+        return { success: false as const, message: "Games must be started in a server." };
+    }
+
+    await interaction.guild.channels.fetch();
+
+    const title = game.lobby.title ?? "Kaisen";
+    const parentId = interaction.channel && "parentId" in interaction.channel
+        ? interaction.channel.parentId
+        : null;
+    const botId = interaction.client.user?.id;
+    const readonlyOverwrites = [
+        {
+            id: interaction.guild.roles.everyone.id,
+            deny: [PermissionFlagsBits.SendMessages]
+        },
+        ...(botId ? [{
+            id: botId,
+            allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ManageChannels]
+        }] : [])
+    ];
+    const gameOverwrites = botId ? [{
+        id: botId,
+        allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ManageChannels]
+    }] : [];
+
+    const findOrCreateTextChannel = async (name: string, reason: string) => {
+        const existing = interaction.guild?.channels.cache.find(channel =>
+            channel.name === name && channel.type === ChannelType.GuildText
+        );
+
+        if (existing) return existing as TextChannel;
+
+        return interaction.guild?.channels.create({
+            name,
+            type: ChannelType.GuildText,
+            parent: parentId ?? undefined,
+            permissionOverwrites: readonlyOverwrites,
+            reason
+        }) as Promise<TextChannel>;
+    };
+
+    const gameChannel = await interaction.guild.channels.create({
+        name: channelName(title, "game"),
+        type: ChannelType.GuildText,
+        parent: parentId ?? undefined,
+        permissionOverwrites: gameOverwrites,
+        reason: "Kaisen game started"
+    });
+    const logChannel = await findOrCreateTextChannel(channelName(title, "logs"), "Kaisen game logs");
+    const resultsChannel = await findOrCreateTextChannel(channelName(title, "results"), "Kaisen game results");
+    const voiceChannelName = channelName(title, "voice");
+    const existingVoiceChannel = interaction.guild.channels.cache.find(channel =>
+        channel.name === voiceChannelName && channel.type === ChannelType.GuildVoice
+    );
+    const voiceChannel = existingVoiceChannel ?? await interaction.guild.channels.create({
+        name: voiceChannelName,
+        type: ChannelType.GuildVoice,
+        parent: parentId ?? undefined,
+        reason: "Kaisen game voice channel"
+    });
+
+    game.logChannelId = logChannel.id;
+    game.resultsChannelId = resultsChannel.id;
+    game.voiceChannelId = voiceChannel.id;
+    interaction.client.gameRegistry.moveGameToChannel(game, gameChannel.id);
+    return { success: true as const, gameChannel: gameChannel as TextChannel, logChannel, resultsChannel };
+}
+
+export async function postGameResult(game: Game, content: string) {
+    if (!game.resultsChannelId) return;
+
+    try {
+        const channel = await game.lobby.message?.client.channels.fetch(game.resultsChannelId);
+        if (channel?.isSendable()) await channel.send({ content });
+    } catch (error) {
+        logger.error(`[${game.channelId}] Failed to post game result: ${error instanceof Error ? error.message : String(error)}`);
+    }
+}
+
+export async function postGameLog(game: Game, content: string) {
+    if (!game.logChannelId) return;
+
+    try {
+        const channel = await game.lobby.message?.client.channels.fetch(game.logChannelId);
+
+        if (channel?.isSendable()) {
+            const namedContent = content.replace(/<@(\d+)>/g, (mention, playerId: string) => {
+                const botName = game.lobby.botNames.get(playerId);
+                if (botName) return botName;
+
+                const player = game.players.find(candidate => candidate.discordId === playerId);
+                return player ? `${mention} (${player.username})` : mention;
+            });
+            const timestampedContent = `<t:${Math.floor(Date.now() / 1000)}:F>\n${namedContent}`;
+            for (let index = 0; index < timestampedContent.length; index += 2_000) {
+                await channel.send({ content: timestampedContent.slice(index, index + 2_000) });
+            }
+        }
+    } catch (error) {
+        logger.error(`[${game.channelId}] Failed to write game log: ${error instanceof Error ? error.message : String(error)}`);
+    }
+}
+
+export function scheduleGameCleanup(client: Client, game: Game) {
+    if (game.cleanupTimer) return;
+
+    game.cleanupTimer = setTimeout(async () => {
+        clearMissionTimer(game);
+        clearPhaseVoiceMutes(client, game);
+
+        try {
+            const channel = await client.channels.fetch(game.channelId);
+            if (channel && "delete" in channel && typeof channel.delete === "function") {
+                await channel.delete("Kaisen game finished");
+            }
+            if (game.voiceChannelId) {
+                const voiceChannel = await client.channels.fetch(game.voiceChannelId);
+                if (voiceChannel && "delete" in voiceChannel && typeof voiceChannel.delete === "function") {
+                    await voiceChannel.delete("Kaisen game finished");
+                }
+            }
+        } catch (error) {
+            logger.error(`[${game.channelId}] Failed to delete game channel: ${error instanceof Error ? error.message : String(error)}`);
+        }
+
+        client.gameRegistry.deleteGame(game.channelId);
+    }, 60_000);
+}

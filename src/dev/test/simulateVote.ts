@@ -8,7 +8,9 @@ import {
 
 import Player from "../../game/Player.js";
 import MissionManager, { type ExpeditionVote, type MissionVote } from "../../game/managers/MissionManager.js";
-import { findPlayerByToken, refreshMissionMessage } from "../../utils/missionDebug.js";
+import { EmbedCreator } from "../../ui/EmbedCreator.js";
+import { findPlayerByToken, publishPendingMissionReveals, publishRoundResult, refreshMissionMessage } from "../../utils/missionDebug.js";
+import { scheduleMissionTimer } from "../../utils/missionTimers.js";
 
 function getManualVoteValue(phase: "VOTING" | "MISSION", value: string): ExpeditionVote | MissionVote | null {
     const normalized = value.trim().toLowerCase();
@@ -34,38 +36,20 @@ export default {
     data: new SlashCommandBuilder()
         .setName("simulate_vote")
         .setDescription("Simulate bot approval votes or mission votes")
-        .addStringOption(option =>
-            option
-                .setName("mode")
-                .setDescription("Vote randomly or choose manually")
-                .addChoices(
-                    { name: "Random", value: "random" },
-                    { name: "Manual", value: "manual" }
-                )
-                .setRequired(true)
-        )
-        .addStringOption(option =>
-            option
-                .setName("target")
-                .setDescription("Vote for every eligible bot or one specific bot")
-                .addChoices(
-                    { name: "Every eligible bot", value: "all" },
-                    { name: "Specific bot", value: "specific" }
-                )
-                .setRequired(true)
-        )
-        .addStringOption(option =>
-            option
-                .setName("bot")
-                .setDescription("Bot name, number, or id when targeting a specific bot")
-                .setRequired(false)
-        )
-        .addStringOption(option =>
-            option
-                .setName("vote")
-                .setDescription("approve/reject for voting or pass/fail for mission")
-                .setRequired(false)
-        ),
+        .addSubcommand(subcommand => subcommand.setName("random_all").setDescription("Randomly vote for every eligible bot"))
+        .addSubcommand(subcommand => subcommand
+            .setName("random_bot")
+            .setDescription("Randomly vote for one bot")
+            .addStringOption(option => option.setName("bot").setDescription("Bot name, number, or id").setRequired(true)))
+        .addSubcommand(subcommand => subcommand
+            .setName("manual_all")
+            .setDescription("Give every eligible bot the same vote")
+            .addStringOption(option => option.setName("vote").setDescription("approve/reject or pass/fail").setRequired(true)))
+        .addSubcommand(subcommand => subcommand
+            .setName("manual_bot")
+            .setDescription("Give one bot a specific vote")
+            .addStringOption(option => option.setName("bot").setDescription("Bot name, number, or id").setRequired(true))
+            .addStringOption(option => option.setName("vote").setDescription("approve/reject or pass/fail").setRequired(true))),
 
     async execute(interaction: ChatInputCommandInteraction, client: Client) {
         const game = client.gameRegistry.getGame(interaction.channelId);
@@ -77,8 +61,9 @@ export default {
             });
         }
 
-        const mode = interaction.options.getString("mode", true);
-        const target = interaction.options.getString("target", true);
+        const mode = interaction.options.getSubcommand();
+        const isManual = mode.startsWith("manual");
+        const targetsAllBots = mode.endsWith("all");
         const botToken = interaction.options.getString("bot");
         const manualVote = interaction.options.getString("vote");
         const missionManager = new MissionManager(game);
@@ -103,12 +88,9 @@ export default {
 
         let selectedPlayers = eligiblePlayers;
 
-        if (target === "specific") {
+        if (!targetsAllBots) {
             if (!botToken) {
-                return interaction.reply({
-                    content: "Provide a bot name, number, or id.",
-                    flags: MessageFlags.Ephemeral
-                });
+                return interaction.reply({ content: "Provide a bot name, number, or id.", flags: MessageFlags.Ephemeral });
             }
 
             const player = findPlayerByToken(game, botToken);
@@ -123,12 +105,9 @@ export default {
             selectedPlayers = [player];
         }
 
-        if (mode === "manual") {
+        if (isManual) {
             if (!manualVote) {
-                return interaction.reply({
-                    content: "Provide a vote value.",
-                    flags: MessageFlags.Ephemeral
-                });
+                return interaction.reply({ content: "Provide a vote value.", flags: MessageFlags.Ephemeral });
             }
 
             const voteValue = getManualVoteValue(game.phase, manualVote);
@@ -163,7 +142,36 @@ export default {
             }
         }
 
+        let missionResult: ReturnType<MissionManager["resolveMission"]> | null = null;
+
+        if (game.phase === "VOTING" && missionManager.allPlayersVoted()) {
+            if (missionManager.approvalPassed()) {
+                missionManager.beginMission();
+            } else {
+                missionManager.rotateLeader();
+                missionManager.beginPlanning();
+            }
+            scheduleMissionTimer(client, game);
+        } else if (game.phase === "MISSION" && missionManager.allExpeditionMembersVoted()) {
+            missionResult = missionManager.resolveMission();
+            scheduleMissionTimer(client, game);
+        }
+
+        if (missionResult && interaction.channel?.isSendable()) {
+            await interaction.channel.send({ embeds: [EmbedCreator.missionResult(
+                missionResult.data.missionNumber,
+                missionResult.data.success,
+                missionResult.data.fails,
+                missionResult.data.requiredFails,
+                missionResult.data.votes
+            )] });
+        }
+
         await refreshMissionMessage(interaction, game);
+        if (missionResult) {
+            await publishPendingMissionReveals(game);
+        }
+        await publishRoundResult(game);
 
         return interaction.reply({
             content: `Simulated ${selectedPlayers.length} ${game.phase === "VOTING" ? "approval" : "mission"} vote(s).`,

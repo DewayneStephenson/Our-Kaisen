@@ -24,7 +24,11 @@ export default class LobbyManager {
     lobby.timerSettings = {
         missionSelectionSeconds: 30,
         votingSeconds: 60,
-        missionSeconds: 30
+        missionSeconds: 30,
+        sealingSeconds: 30,
+        voiceMuteWindowSeconds: 5,
+        phaseMuteEnabled: true,
+        phaseChatLockEnabled: true
     };
 
     this.lobbies.set(channelId, lobby);
@@ -119,8 +123,12 @@ export default class LobbyManager {
         lobby.roles = RoleManager.DefaultMode(lobby.players.length);
         lobby.timerSettings = {
             missionSelectionSeconds: 30,
-            votingSeconds: 60,
-            missionSeconds: 30
+        votingSeconds: 60,
+        missionSeconds: 30,
+        sealingSeconds: 30,
+        voiceMuteWindowSeconds: 5,
+        phaseMuteEnabled: true,
+        phaseChatLockEnabled: true
         };
         this.lobbies.set(channelId, lobby);
         lobby.host = userId;

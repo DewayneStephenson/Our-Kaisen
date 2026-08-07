@@ -34,6 +34,36 @@ export default {
                 .setMinValue(5)
                 .setMaxValue(300)
                 .setRequired(false)
+        )
+        .addIntegerOption(option =>
+            option.setName("sealing")
+                .setDescription("Seconds for the Curse to choose a Sealing target")
+                .setMinValue(5)
+                .setMaxValue(300)
+                .setRequired(false)
+        )
+        .addIntegerOption(option =>
+            option.setName("mute_window")
+                .setDescription("Seconds to mute at the start and end of planning/voting")
+                .setMinValue(0)
+                .setMaxValue(60)
+                .setRequired(false)
+        )
+        .addStringOption(option =>
+            option.setName("title")
+                .setDescription("Optional title for the game channels")
+                .setMaxLength(80)
+                .setRequired(false)
+        )
+        .addBooleanOption(option => option
+            .setName("phase_mute")
+            .setDescription("Enable voice muting during protected phase windows")
+            .setRequired(false)
+        )
+        .addBooleanOption(option => option
+            .setName("phase_chat_lock")
+            .setDescription("Prevent chat during protected phase windows")
+            .setRequired(false)
         ),
 
     async execute(interaction: ChatInputCommandInteraction, client: Client) {
@@ -56,6 +86,11 @@ export default {
         const missionSelection = interaction.options.getInteger("mission_selection");
         const voting = interaction.options.getInteger("voting");
         const mission = interaction.options.getInteger("mission");
+        const sealing = interaction.options.getInteger("sealing");
+        const muteWindow = interaction.options.getInteger("mute_window");
+        const title = interaction.options.getString("title");
+        const phaseMute = interaction.options.getBoolean("phase_mute");
+        const phaseChatLock = interaction.options.getBoolean("phase_chat_lock");
 
         if (missionSelection !== null) {
             lobby.timerSettings.missionSelectionSeconds = missionSelection;
@@ -68,6 +103,21 @@ export default {
         if (mission !== null) {
             lobby.timerSettings.missionSeconds = mission;
         }
+
+        if (sealing !== null) {
+            lobby.timerSettings.sealingSeconds = sealing;
+        }
+
+        if (muteWindow !== null) {
+            lobby.timerSettings.voiceMuteWindowSeconds = muteWindow;
+        }
+
+        if (title !== null) {
+            lobby.title = title.trim() || null;
+        }
+
+        if (phaseMute !== null) lobby.timerSettings.phaseMuteEnabled = phaseMute;
+        if (phaseChatLock !== null) lobby.timerSettings.phaseChatLockEnabled = phaseChatLock;
 
         const embed = EmbedCreator.lobby(lobby);
 

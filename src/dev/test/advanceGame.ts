@@ -7,7 +7,8 @@ import {
 } from "discord.js";
 
 import MissionManager from "../../game/managers/MissionManager.js";
-import { refreshMissionMessage } from "../../utils/missionDebug.js";
+import { publishRoundResult, refreshMissionMessage } from "../../utils/missionDebug.js";
+import { scheduleMissionTimer } from "../../utils/missionTimers.js";
 
 export default {
     permissions: [PermissionFlagsBits.Administrator],
@@ -74,7 +75,9 @@ export default {
             });
         }
 
+        scheduleMissionTimer(client, game);
         await refreshMissionMessage(interaction, game);
+        await publishRoundResult(game);
 
         return interaction.reply({
             content: `Advanced game state to ${game.phase}.`,

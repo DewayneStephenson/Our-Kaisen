@@ -9,6 +9,7 @@ export default class Lobby {
     botNames: Map<string, string>;
     humanNames: Map<string, string>;
     settings: string;
+    title: string | null;
     timerSettings: TimerSettings;
     roles: RoleKey[];
     host: string | null;
@@ -21,10 +22,15 @@ export default class Lobby {
         this.botNames = new Map();
         this.humanNames = new Map();
         this.settings = "lobby";
+        this.title = null;
         this.timerSettings = {
             missionSelectionSeconds: 30,
             votingSeconds: 60,
-            missionSeconds: 30
+            missionSeconds: 30,
+            sealingSeconds: 30,
+            voiceMuteWindowSeconds: 5,
+            phaseMuteEnabled: true,
+            phaseChatLockEnabled: true
         };
         this.roles = [];        // now stores role KEYS
         this.host = null;
