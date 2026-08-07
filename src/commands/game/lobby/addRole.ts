@@ -2,11 +2,11 @@ import {
     SlashCommandBuilder,
     type ChatInputCommandInteraction,
     type Client,
-    MessageFlags,
-    Message
+    MessageFlags
 } from "discord.js";
 
 import RoleManager, { type RoleKey } from '../../../lobby/LobbyRoleManager.js';
+import { EmbedCreator } from "../../../ui/EmbedCreator.js";
 
 export default {
     data: new SlashCommandBuilder()
@@ -65,11 +65,17 @@ export default {
 
         lobby.roles = result.newRoles;
 
-        const embed = client.lobbyManager.buildEmbed(interaction.channelId);
-        await interaction.reply({ embeds: [embed] });
+        const embed = EmbedCreator.lobby(lobby);
 
-        const message = await interaction.fetchReply();
+        if (lobby.message) {
+            await lobby.message.edit({ embeds: [embed] });
+            return interaction.reply({
+                content: "Role added to the lobby.",
+                flags: MessageFlags.Ephemeral
+            });
+        }
 
+        const message = await interaction.reply({ embeds: [embed], fetchReply: true });
         lobby.message = message;
     }
 };

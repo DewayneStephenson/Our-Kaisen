@@ -1,14 +1,20 @@
 // Game.ts
-import { GamePhase,KaisenRole, type TimerSettings } from "../types/game.js";
-import Player from "./Player.js"
-import Lobby from "../lobby/Lobby.js"
+import { randomUUID } from "node:crypto";
+import { GamePhase, KaisenRole, type TimerSettings } from "../types/game.js";
+import Player from "./Player.js";
+import Lobby from "../lobby/Lobby.js";
 
 export default class Game {
+    id: string;
+    name: string;
     channelId: string;
+    guildId: string | null;
     lobbyChannelId: string;
     logChannelId: string | null;
+    logThreadId: string | null;
     resultsChannelId: string | null;
     voiceChannelId: string | null;
+    participantRoleId: string | null;
     cleanupTimer: ReturnType<typeof setTimeout> | null;
     lobby: Lobby;
     players: Player[];
@@ -24,7 +30,9 @@ export default class Game {
     missionVoteHistory: Array<Record<string, "pass" | "fail"> | null>;
     timerSettings: TimerSettings;
     phaseTimer: ReturnType<typeof setTimeout> | null;
+    phaseWarningTimer: ReturnType<typeof setTimeout> | null;
     phaseTimerEndsAt: number | null;
+    actionWindowActive: boolean;
     voiceMuteTimers: Array<ReturnType<typeof setTimeout>>;
     chatLockTimers: Array<ReturnType<typeof setTimeout>>;
     voiceMuteOperation: Promise<void>;
@@ -36,13 +44,18 @@ export default class Game {
     started: boolean;
 
     constructor(channelId: string, lobby: Lobby) {
+        this.id = randomUUID().split("-")[0].toUpperCase();
+        this.name = lobby.title?.trim() || "Kaisen";
         this.channelId = channelId;
+        this.guildId = null;
         this.lobbyChannelId = channelId;
         this.logChannelId = null;
+        this.logThreadId = null;
         this.resultsChannelId = null;
         this.voiceChannelId = null;
+        this.participantRoleId = null;
         this.cleanupTimer = null;
-        this.lobby = lobby
+        this.lobby = lobby;
         this.players = [];
         this.roles = [];
         this.missionCount = 5;
@@ -56,7 +69,9 @@ export default class Game {
         this.missionVoteHistory = Array(this.missionCount).fill(null);
         this.timerSettings = { ...lobby.timerSettings };
         this.phaseTimer = null;
+        this.phaseWarningTimer = null;
         this.phaseTimerEndsAt = null;
+        this.actionWindowActive = false;
         this.voiceMuteTimers = [];
         this.chatLockTimers = [];
         this.voiceMuteOperation = Promise.resolve();

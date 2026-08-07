@@ -111,5 +111,9 @@ const rest = new REST().setToken(process.env.TOKEN);
         if (error.response) {
             logger.error(`HTTP Status: ${error.response.status}`);
         }
+        if (error.rawError) {
+            logger.error(`Discord API error: ${JSON.stringify(error.rawError)}`);
+        }
+        logger.error(`Deploy error details: ${error.stack ?? String(error)} ${error.cause ? `cause: ${String(error.cause)}` : ""}`);
     }
 })();

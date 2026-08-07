@@ -26,7 +26,7 @@ export default class LobbyManager {
         votingSeconds: 60,
         missionSeconds: 30,
         sealingSeconds: 30,
-        voiceMuteWindowSeconds: 5,
+        actionTimeSeconds: 5,
         phaseMuteEnabled: true,
         phaseChatLockEnabled: true
     };
@@ -58,7 +58,7 @@ export default class LobbyManager {
                 name: `Players (${lobby.players.length})`,
                 value: lobby.players.length
                     ? lobby.players
-                    .map(id => `<@${id}>`)
+                    .map(id => lobby.botNames.get(id) ?? `<@${id}>`)
                     .join("\n")
                     : "No players yet."
             },
@@ -83,6 +83,7 @@ export default class LobbyManager {
         if (lobby.isBotLobby) return null;
         if (!lobby.players.includes(userId)) {
             lobby.players.push(userId);
+            lobby.humanNames.set(userId, username);
         }
 
         lobby.roles = RoleManager.updateRole(lobby.roles,lobby.players.length);
@@ -126,7 +127,7 @@ export default class LobbyManager {
         votingSeconds: 60,
         missionSeconds: 30,
         sealingSeconds: 30,
-        voiceMuteWindowSeconds: 5,
+        actionTimeSeconds: 5,
         phaseMuteEnabled: true,
         phaseChatLockEnabled: true
         };

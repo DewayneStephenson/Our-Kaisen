@@ -21,6 +21,20 @@ const IMPROVISED_MISSION_TEAM_SIZES: Record<number, number[]> = {
     15: [5, 6, 7, 8, 8]
 };
 
+const REQUIRED_FAILS: Record<number, number[]> = {
+    5: [1, 1, 1, 1, 1],
+    6: [1, 1, 1, 1, 1],
+    7: [1, 1, 1, 2, 1],
+    8: [1, 1, 1, 2, 1],
+    9: [1, 1, 1, 2, 1],
+    10: [1, 1, 1, 2, 1],
+    11: [1, 2, 2, 3, 2],
+    12: [1, 2, 2, 3, 2],
+    13: [1, 2, 2, 3, 2],
+    14: [1, 2, 2, 3, 2],
+    15: [1, 2, 2, 3, 2],
+};
+
 export function getMissionTeamSizes(playerCount: number): number[] {
     if (OFFICIAL_MISSION_TEAM_SIZES[playerCount]) {
         return OFFICIAL_MISSION_TEAM_SIZES[playerCount];
@@ -34,11 +48,7 @@ export function getMissionTeamSizes(playerCount: number): number[] {
 }
 
 export function getRequiredFails(playerCount: number, missionNumber: number): number {
-    if (missionNumber === 4 && playerCount >= 7) {
-        return 2;
-    }
-
-    return 1;
+    return REQUIRED_FAILS[playerCount]?.[missionNumber - 1] ?? 1;
 }
 
 export default class MissionManager {

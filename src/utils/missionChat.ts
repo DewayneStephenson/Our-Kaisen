@@ -26,7 +26,7 @@ export function schedulePhaseChatLocks(client: Client, game: Game, phaseSeconds:
     if (game.phase === "MISSION") return lock(true);
     if (game.phase !== "PLANNING" && game.phase !== "VOTING") return lock(false);
 
-    const window = Math.min(game.timerSettings.voiceMuteWindowSeconds, phaseSeconds);
+    const window = Math.min(game.timerSettings.actionTimeSeconds, phaseSeconds);
     if (window <= 0) return lock(false);
     lock(true);
     if (window < phaseSeconds) game.chatLockTimers.push(setTimeout(() => lock(false), window * 1000));

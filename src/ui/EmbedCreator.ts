@@ -29,7 +29,6 @@ export class EmbedCreator {
     static lobby(lobby: Lobby) {
         const players = lobby.players.map(id =>
             lobby.botNames.get(id)
-                ?? lobby.humanNames.get(id)
                 ?? `<@${id}>`
         );
         const timerText = [
@@ -37,7 +36,9 @@ export class EmbedCreator {
             `Voting: ${lobby.timerSettings.votingSeconds}s`,
             `Mission decision: ${lobby.timerSettings.missionSeconds}s`,
             `Sealing: ${lobby.timerSettings.sealingSeconds}s`,
-            `Voice mute window: ${lobby.timerSettings.voiceMuteWindowSeconds}s`
+            `Action time: ${lobby.timerSettings.actionTimeSeconds}s`,
+            `Phase voice mute: ${lobby.timerSettings.phaseMuteEnabled ? "enabled" : "disabled"}`,
+            `Phase chat lock: ${lobby.timerSettings.phaseChatLockEnabled ? "enabled" : "disabled"}`
         ].join("\n");
 
         return new EmbedBuilder()
@@ -133,7 +134,9 @@ export class EmbedCreator {
             `Voting: ${game.timerSettings.votingSeconds}s`,
             `Mission decision: ${game.timerSettings.missionSeconds}s`,
             `Sealing: ${game.timerSettings.sealingSeconds}s`,
-            `Voice mute window: ${game.timerSettings.voiceMuteWindowSeconds}s`
+            `Action time: ${game.timerSettings.actionTimeSeconds}s`,
+            `Phase voice mute: ${game.timerSettings.phaseMuteEnabled ? "enabled" : "disabled"}`,
+            `Phase chat lock: ${game.timerSettings.phaseChatLockEnabled ? "enabled" : "disabled"}`
         ].join("\n");
         const phaseTimerText = game.phaseTimerEndsAt
             ? `<t:${Math.ceil(game.phaseTimerEndsAt / 1000)}:R> (ends <t:${Math.ceil(game.phaseTimerEndsAt / 1000)}:t>)`
@@ -265,16 +268,16 @@ export class EmbedCreator {
     static roundResult(game: Game) {
         const winners = game.players
             .filter(player => player.role.alignment === game.winnerAlignment)
-            .map(player => `<@${player.discordId}> — ${player.role.roleName}`)
+            .map(player => `${EmbedCreator.playerLabel(game, player.discordId)} — ${player.role.roleName}`)
             .join("\n") || "None";
         const losers = game.players
             .filter(player => player.role.alignment !== game.winnerAlignment)
-            .map(player => `<@${player.discordId}> — ${player.role.roleName}`)
+            .map(player => `${EmbedCreator.playerLabel(game, player.discordId)} — ${player.role.roleName}`)
             .join("\n") || "None";
         const assassin = game.players.find(player => player.discordId === game.sealingAssassinId);
         const target = game.players.find(player => player.discordId === game.sealingTargetId);
         const sealingText = assassin && target
-            ? `${assassin.username} selected ${target.username}.`
+            ? `${EmbedCreator.playerLabel(game, assassin.discordId)} selected ${EmbedCreator.playerLabel(game, target.discordId)}.`
             : "The curses won three missions.";
 
         return new EmbedBuilder()

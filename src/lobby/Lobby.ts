@@ -28,7 +28,7 @@ export default class Lobby {
             votingSeconds: 60,
             missionSeconds: 30,
             sealingSeconds: 30,
-            voiceMuteWindowSeconds: 5,
+            actionTimeSeconds: 5,
             phaseMuteEnabled: true,
             phaseChatLockEnabled: true
         };

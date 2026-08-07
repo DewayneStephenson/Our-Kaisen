@@ -7,7 +7,7 @@ import {
 
 import Player from "../../../../game/Player.js";
 import MissionManager from "../../../../game/managers/MissionManager.js";
-import { scheduleMissionTimer } from "../../../../utils/missionTimers.js";
+import { actionWindowIsOpen, scheduleMissionTimer } from "../../../../utils/missionTimers.js";
 import { refreshMissionMessage } from "../../../../utils/missionDebug.js";
 
 function parseTokens(input: string) {
@@ -48,6 +48,12 @@ export default {
         if (game.phase !== "PLANNING") {
             return interaction.reply({
                 content: "The game must be in planning before selecting an expedition.",
+                flags: MessageFlags.Ephemeral
+            });
+        }
+        if (!actionWindowIsOpen(game)) {
+            return interaction.reply({
+                content: "Wait for action time to begin.",
                 flags: MessageFlags.Ephemeral
             });
         }
@@ -97,6 +103,13 @@ export default {
         }
 
         missionManager.setExpedition(selectedIds);
+        if (game.timerSettings.actionTimeSeconds > 0) {
+            await refreshMissionMessage(interaction, game);
+            return interaction.reply({
+                content: "Selected the expedition. It will be submitted when action time ends.",
+                flags: MessageFlags.Ephemeral
+            });
+        }
         missionManager.beginVoting();
         scheduleMissionTimer(client, game);
         await refreshMissionMessage(interaction, game);

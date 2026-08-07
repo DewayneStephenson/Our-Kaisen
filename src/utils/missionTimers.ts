@@ -12,7 +12,7 @@ import {
     clearPhaseVoiceMutes,
     schedulePhaseVoiceMutes,
 } from "./missionVoice.js";
-import { schedulePhaseChatLocks } from "./missionChat.js";
+import { clearPhaseChatLocks, schedulePhaseChatLocks } from "./missionChat.js";
 import { postGameLog } from "./gameChannels.js";
 
 function pickRandomPlayers(players: Player[], count: number): Player[] {
@@ -22,9 +22,14 @@ function pickRandomPlayers(players: Player[], count: number): Player[] {
 function fillPlanningTimeout(game: Game) {
     const missionManager = new MissionManager(game);
     const requiredTeamSize = missionManager.getRequiredTeamSize();
-    const expedition = pickRandomPlayers(game.players, requiredTeamSize);
+    const expedition =
+        game.expedition.length === requiredTeamSize
+            ? game.expedition
+            : pickRandomPlayers(game.players, requiredTeamSize).map(
+                  (player) => player.discordId,
+              );
 
-    missionManager.setExpedition(expedition.map((player) => player.discordId));
+    missionManager.setExpedition(expedition);
     missionManager.beginVoting();
 }
 
@@ -76,8 +81,50 @@ export function clearMissionTimer(game: Game) {
         clearTimeout(game.phaseTimer);
         game.phaseTimer = null;
     }
+    if (game.phaseWarningTimer) {
+        clearTimeout(game.phaseWarningTimer);
+        game.phaseWarningTimer = null;
+    }
 
     game.phaseTimerEndsAt = null;
+    game.actionWindowActive = false;
+}
+
+export function actionWindowIsOpen(game: Game) {
+    return game.timerSettings.actionTimeSeconds === 0 || game.actionWindowActive;
+}
+
+function phaseLabel(game: Game) {
+    return game.phase === "PLANNING"
+        ? "expedition selection"
+        : game.phase === "VOTING"
+          ? "approval voting"
+          : game.phase === "MISSION"
+            ? "mission decisions"
+            : "Sealing";
+}
+
+async function resolvePhase(client: Client, currentGame: Game, scheduledPhase: Game["phase"]) {
+    currentGame.phaseTimer = null;
+    currentGame.actionWindowActive = false;
+    if (currentGame.phase === "PLANNING") {
+        fillPlanningTimeout(currentGame);
+        await postGameLog(currentGame, `⏱️ Expedition selection closed. <@${currentGame.players[0]?.discordId}> proposed: ${currentGame.expedition.map((playerId) => `<@${playerId}>`).join(", ")}.`);
+    } else if (currentGame.phase === "VOTING") {
+        const voteResult = fillVotingTimeout(currentGame);
+        await postGameLog(currentGame, `⏱️ Approval voting closed. ${voteResult.approvalPassed ? "Expedition approved." : `Expedition rejected. Next leader: <@${currentGame.players[0]?.discordId}>.`}`);
+    } else if (currentGame.phase === "MISSION") {
+        const missionResult = fillMissionTimeout(currentGame);
+        await postGameLog(currentGame, `⏱️ Mission ${missionResult.data.missionNumber} resolved ${missionResult.data.success ? "successfully" : "as a failure"}.`);
+    } else if (currentGame.phase === "SEALING") {
+        fillSealingTimeout(currentGame);
+        await postGameLog(currentGame, "⏱️ Sealing timed out; the Sorcerers win.");
+    }
+
+    scheduleMissionTimer(client, currentGame);
+    await updateMissionMessage(currentGame);
+    if (scheduledPhase === "MISSION") await publishPendingMissionReveals(currentGame);
+    await publishRoundResult(currentGame);
 }
 
 export function scheduleMissionTimer(client: Client, game: Game) {
@@ -105,12 +152,24 @@ export function scheduleMissionTimer(client: Client, game: Game) {
         game.phase === "START"
     ) {
         clearPhaseVoiceMutes(client, game);
+        clearPhaseChatLocks(client, game);
         return;
     }
 
+    game.actionWindowActive = game.timerSettings.actionTimeSeconds === 0;
+    clearPhaseVoiceMutes(client, game);
+    clearPhaseChatLocks(client, game);
     game.phaseTimerEndsAt = Date.now() + seconds * 1000;
-    schedulePhaseVoiceMutes(client, game, seconds);
-    schedulePhaseChatLocks(client, game, seconds);
+
+    if (game.timerSettings.actionTimeSeconds > 0 && seconds > 10) {
+        game.phaseWarningTimer = setTimeout(async () => {
+            if (game.phase !== scheduledPhase || game.actionWindowActive) return;
+            const channel = await client.channels.fetch(game.channelId);
+            if (channel?.isSendable()) {
+                await channel.send({ content: `⏳ Discussion ends in 10 seconds. Get ready for ${phaseLabel(game)}.` });
+            }
+        }, (seconds - 10) * 1000);
+    }
 
     const timer = setTimeout(async () => {
         const currentGame = client.gameRegistry.getGame(game.channelId);
@@ -123,49 +182,25 @@ export function scheduleMissionTimer(client: Client, game: Game) {
             return;
         }
 
-        currentGame.phaseTimer = null;
-        if (currentGame.phase === "PLANNING") {
-            fillPlanningTimeout(currentGame);
-            await postGameLog(
-                currentGame,
-                `⏱️ Planning timed out. <@${currentGame.players[0]?.discordId}> automatically selected: ${currentGame.expedition.map((playerId: string) => `<@${playerId}>`).join(", ")}.`,
-            );
-        } else if (currentGame.phase === "VOTING") {
-            const voteResult = fillVotingTimeout(currentGame);
-            await postGameLog(
-                currentGame,
-                `⏱️ Approval voting timed out. Recorded votes: ${Object.entries(
-                    voteResult.votes,
-                )
-                    .map(([playerId, vote]) => `<@${playerId}> ${vote}`)
-                    .join(
-                        ", ",
-                    )}. ${voteResult.approvalPassed ? "Expedition approved." : `Expedition rejected. Next leader: <@${currentGame.players[0]?.discordId}>.`}`,
-            );
-        } else if (currentGame.phase === "MISSION") {
-            const missionResult = fillMissionTimeout(currentGame);
-            await postGameLog(
-                currentGame,
-                `⏱️ Mission ${missionResult.data.missionNumber} timed out and resolved ${missionResult.data.success ? "successfully" : "as a failure"}. Votes: ${missionResult.data.votes
-                    .map((vote) => (vote === "pass" ? "succeed" : "fail"))
-                    .join(
-                        ", ",
-                    )}.${currentGame.phase === "PLANNING" ? ` Next leader: <@${currentGame.players[0]?.discordId}>.` : ""}`,
-            );
-        } else if (currentGame.phase === "SEALING") {
-            fillSealingTimeout(currentGame);
-            await postGameLog(
-                currentGame,
-                "⏱️ Sealing timed out; the Sorcerers win.",
-            );
-        }
+        const actionTime = currentGame.timerSettings.actionTimeSeconds;
+        const supportsActionTime = currentGame.phase !== "SEALING" && actionTime > 0;
+        if (!supportsActionTime) return resolvePhase(client, currentGame, scheduledPhase);
 
-        scheduleMissionTimer(client, currentGame);
+        currentGame.actionWindowActive = true;
+        currentGame.phaseTimerEndsAt = Date.now() + actionTime * 1000;
+        schedulePhaseVoiceMutes(client, currentGame, actionTime);
+        schedulePhaseChatLocks(client, currentGame, actionTime);
         await updateMissionMessage(currentGame);
-        if (scheduledPhase === "MISSION") {
-            await publishPendingMissionReveals(currentGame);
+        const channel = await client.channels.fetch(currentGame.channelId);
+        if (channel?.isSendable()) {
+            await channel.send({ content: `🔇 **Action time:** ${phaseLabel(currentGame)} is open for ${actionTime} seconds. Use the controls above or the matching slash command.`, components: buildMissionView(currentGame).components });
         }
-        await publishRoundResult(currentGame);
+        currentGame.phaseTimer = setTimeout(async () => {
+            const activeGame = client.gameRegistry.getGame(currentGame.channelId);
+            if (activeGame === currentGame && activeGame.phase === scheduledPhase && activeGame.actionWindowActive) {
+                await resolvePhase(client, activeGame, scheduledPhase);
+            }
+        }, actionTime * 1000);
     }, seconds * 1000);
 
     game.phaseTimer = timer;

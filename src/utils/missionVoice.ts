@@ -61,7 +61,7 @@ export function schedulePhaseVoiceMutes(client: Client, game: Game, phaseSeconds
         return;
     }
 
-    const muteWindow = Math.min(game.timerSettings.voiceMuteWindowSeconds, phaseSeconds);
+    const muteWindow = Math.min(game.timerSettings.actionTimeSeconds, phaseSeconds);
 
     if (muteWindow <= 0) {
         return;

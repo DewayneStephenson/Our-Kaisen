@@ -7,6 +7,12 @@ import {
 import type Game from "../game/Game.js";
 import { getMissionTeamSizes } from "../game/managers/MissionManager.js";
 
+function interactionPlayerName(game: Game, playerId: string, fallback: string) {
+    return game.lobby.botNames.get(playerId)
+        ?? game.lobby.humanNames.get(playerId)
+        ?? fallback;
+}
+
 export function buildPlanningComponents(game: Game) {
     const missionIndex = game.missionResults.findIndex(result => result === null);
     const requiredTeamSize = getMissionTeamSizes(game.players.length)[missionIndex] ?? 0;
@@ -16,11 +22,8 @@ export function buildPlanningComponents(game: Game) {
     }
 
     const options = game.players.map(player => ({
-        label: player.username,
+        label: interactionPlayerName(game, player.discordId, player.username),
         value: player.discordId,
-        description: game.lobby.botNames.has(player.discordId)
-            ? game.lobby.botNames.get(player.discordId) ?? player.username
-            : undefined,
         default: game.expedition.includes(player.discordId)
     }));
 
@@ -74,7 +77,10 @@ export function buildMissionComponents(game: Game) {
                 .setMaxValues(1)
                 .addOptions(game.players
                     .filter(target => target.discordId !== player.discordId)
-                    .map(target => ({ label: target.username, value: target.discordId })))
+                    .map(target => ({
+                        label: interactionPlayerName(game, target.discordId, target.username),
+                        value: target.discordId
+                    })))
         ));
 
     return [decisionButtons, ...powerRows];
@@ -92,7 +98,10 @@ export function buildSealingComponents(game: Game) {
                 .setPlaceholder("Sealing: choose the Honored One")
                 .setMinValues(1)
                 .setMaxValues(1)
-                .addOptions(game.players.map(player => ({ label: player.username, value: player.discordId })))
+                .addOptions(game.players.map(player => ({
+                    label: interactionPlayerName(game, player.discordId, player.username),
+                    value: player.discordId
+                })))
         )
     ];
 }

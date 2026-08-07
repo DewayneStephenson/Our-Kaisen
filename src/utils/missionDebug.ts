@@ -11,6 +11,11 @@ import {
 } from "../ui/MissionComponents.js";
 import { postGameLog, postGameResult, scheduleGameCleanup } from "./gameChannels.js";
 
+function playerLogLabel(game: Game, player: Player) {
+    const botName = game.lobby.botNames.get(player.discordId);
+    return botName ?? `${player.username} (<@${player.discordId}>)`;
+}
+
 export function findPlayerByToken(game: Game, token: string): Player | null {
     const normalizedToken = token.trim().toLowerCase();
 
@@ -36,8 +41,12 @@ export function pickRandomPlayers(players: Player[], count: number): Player[] {
 }
 
 export function buildMissionView(game: Game) {
+    const actionsAvailable =
+        game.timerSettings.actionTimeSeconds === 0 || game.actionWindowActive;
     const components =
-        game.phase === "PLANNING"
+        !actionsAvailable
+            ? []
+            : game.phase === "PLANNING"
             ? buildPlanningComponents(game)
             : game.phase === "VOTING"
                 ? buildVotingComponents()
@@ -87,10 +96,10 @@ export async function publishRoundResult(game: Game) {
         })
         .join("\n");
     await postGameLog(game, `🏁 **${game.winnerAlignment}s win.**\n\n**Final player log**\n${game.players
-        .map(player => `<@${player.discordId}> — ${player.role.roleName}; visible teammates: ${player.getVisibleTeammates(game.players).join(", ") || "none"}`)
+        .map(player => `${playerLogLabel(game, player)} — ${player.role.roleName}; visible teammates: ${player.getVisibleTeammates(game.players).join(", ") || "none"}`)
         .join("\n")}\n\n**Mission history**\n${missionHistory}`);
     await postGameResult(game, `🏁 **${game.winnerAlignment}s win.**\n${game.players
-        .map(player => `<@${player.discordId}> — ${player.role.roleName}`)
+        .map(player => `${playerLogLabel(game, player)} — ${player.role.roleName}`)
         .join("\n")}\n\n${missionHistory}`);
     scheduleGameCleanup(game.lobby.message.client, game);
     game.roundResultAnnounced = true;

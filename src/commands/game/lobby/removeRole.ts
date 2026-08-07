@@ -71,13 +71,16 @@ export default {
 			});
 		}
 
-		await interaction.reply({
-			embeds: [embed]
-		});
+        if (lobby.message) {
+            await lobby.message.edit({ embeds: [embed] });
+            return interaction.reply({
+                content: "Role removed from the lobby.",
+                flags: MessageFlags.Ephemeral
+            });
+        }
 
-		const message = await interaction.fetchReply();
-
-		lobby.message = message;
+        const message = await interaction.reply({ embeds: [embed], fetchReply: true });
+        lobby.message = message;
 
     }
 };

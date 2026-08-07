@@ -6,7 +6,7 @@ export interface TimerSettings {
     votingSeconds: number;
     missionSeconds: number;
     sealingSeconds: number;
-    voiceMuteWindowSeconds: number;
+    actionTimeSeconds: number;
     phaseMuteEnabled: boolean;
     phaseChatLockEnabled: boolean;
 }

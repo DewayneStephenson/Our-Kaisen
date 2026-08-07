@@ -43,8 +43,8 @@ export default {
                 .setRequired(false)
         )
         .addIntegerOption(option =>
-            option.setName("mute_window")
-                .setDescription("Seconds to mute at the start and end of planning/voting")
+            option.setName("action_time")
+                .setDescription("Muted action time after discussion ends (0 keeps immediate phases)")
                 .setMinValue(0)
                 .setMaxValue(60)
                 .setRequired(false)
@@ -87,7 +87,7 @@ export default {
         const voting = interaction.options.getInteger("voting");
         const mission = interaction.options.getInteger("mission");
         const sealing = interaction.options.getInteger("sealing");
-        const muteWindow = interaction.options.getInteger("mute_window");
+        const actionTime = interaction.options.getInteger("action_time");
         const title = interaction.options.getString("title");
         const phaseMute = interaction.options.getBoolean("phase_mute");
         const phaseChatLock = interaction.options.getBoolean("phase_chat_lock");
@@ -108,8 +108,8 @@ export default {
             lobby.timerSettings.sealingSeconds = sealing;
         }
 
-        if (muteWindow !== null) {
-            lobby.timerSettings.voiceMuteWindowSeconds = muteWindow;
+        if (actionTime !== null) {
+            lobby.timerSettings.actionTimeSeconds = actionTime;
         }
 
         if (title !== null) {

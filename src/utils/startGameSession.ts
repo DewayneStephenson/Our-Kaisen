@@ -127,7 +127,7 @@ export async function startGameSession(
     if (lobby.message) {
         try {
             await lobby.message.edit({
-                content: `Game moved to <#${channelResult.gameChannel.id}>.`,
+                content: `**${game.name}** (Game ID: \`${game.id}\`) moved to <#${channelResult.gameChannel.id}>.`,
                 embeds: [],
                 components: [],
             });
@@ -140,7 +140,10 @@ export async function startGameSession(
 
     lobby.message = await channelResult.gameChannel.send({
         embeds: [EmbedCreator.mission(game)],
-        components: buildPlanningComponents(game),
+        components:
+            game.timerSettings.actionTimeSeconds === 0
+                ? buildPlanningComponents(game)
+                : [],
     });
     await postGameLog(
         game,
