@@ -1,6 +1,6 @@
-import { EmbedBuilder } from "discord.js";
-import Lobby from "./Lobby.js";
-import RoleManager from "./RoleManager.js";
+import { EmbedBuilder, Role } from "discord.js";
+import Lobby from "../lobby/Lobby.js";
+import RoleManager from "../lobby/LobbyRoleManager.js";
 import { generateBotUser } from "../utils/botUser.js";
 
 export default class LobbyManager {
@@ -9,22 +9,31 @@ export default class LobbyManager {
     constructor() {
         this.lobbies = new Map();
     }
+    
 
-    createLobby(channelId: string, userID: string) {
-        if (this.lobbies.has(channelId)) return null;
+   createLobby(channelId: string, userID: string, username: string) {
+    if (this.lobbies.has(channelId)) return null;
 
-        const lobby = new Lobby(channelId);
+    const lobby = new Lobby(channelId);
 
-        lobby.players.push(userID);
+    lobby.players.push(userID);
 
-        lobby.roles = RoleManager.DefaultMode(lobby.players.length);
+    lobby.humanNames.set(userID, username);
 
-        this.lobbies.set(channelId, lobby);
+    lobby.roles = RoleManager.DefaultMode(lobby.players.length);
+    lobby.timerSettings = {
+        missionSelectionSeconds: 30,
+        votingSeconds: 60,
+        missionSeconds: 30
+    };
 
-        lobby.host = userID;
+    this.lobbies.set(channelId, lobby);
 
-        return lobby;
-    }
+    lobby.host = userID;
+
+    return lobby;
+}
+
 
     getLobby(channelId: string) {
         return this.lobbies.get(channelId);
@@ -35,36 +44,43 @@ export default class LobbyManager {
     }
 
     buildEmbed(channelId: string) {
-        const lobby = this.getLobby(channelId);
-        if (!lobby) return null;
+    const lobby = this.getLobby(channelId);
+    if (!lobby) return null;
 
-        return new EmbedBuilder()
-            .setTitle("Lobby")
-            .addFields(
-                {
-                    name: `Players (${lobby.players.length})`,
-                    value: lobby.players.length
-                        ? lobby.players
-                            .map(id => lobby.botNames.get(id) ?? `<@${id}>`)
-                            .join("\n")
-                        : "Empty Lobby",
-                },
-                {
-                    name: "Roles",
-                    value: lobby.roles.length
-                        ? lobby.roles.map(r => r.name).join(", ")
-                        : "Default Mode",
-                }
-            );
+    return new EmbedBuilder()
+        .setTitle("Lobby")
+        .addFields(
+            {
+                name: `Players (${lobby.players.length})`,
+                value: lobby.players.length
+                    ? lobby.players
+                    .map(id => `<@${id}>`)
+                    .join("\n")
+                    : "No players yet."
+            },
+            {
+                name: "Roles",
+                value: lobby.roles.length
+                    ? lobby.roles.map(r => RoleManager.ROLES[r].name).join(", ")
+                    : "No roles selected."
+            }
+        );
+}
+
+    getUsername(id: string, lobby: Lobby): string {
+    return lobby.botNames.get(id)
+        ?? lobby.humanNames.get(id)
+        ?? `<@${id}>`;
     }
 
-    addPlayer(channelId: string, userId: string) {
+    addPlayer(channelId: string, userId: string,username: string) {
         const lobby = this.getLobby(channelId);
         if (!lobby) return null;
         if (lobby.isBotLobby) return null;
         if (!lobby.players.includes(userId)) {
             lobby.players.push(userId);
         }
+
         lobby.roles = RoleManager.updateRole(lobby.roles,lobby.players.length);
         return lobby;
     }
@@ -80,12 +96,16 @@ export default class LobbyManager {
             this.deleteLobby(channelId);
             return lobby;
         }
+        if (lobby.host === userId) {
+            lobby.host = lobby.players[0];
+        }
+        lobby.humanNames.delete(userId);
         lobby.roles = RoleManager.updateRole(lobby.roles,lobby.players.length);
+        
 
         return lobby;
     }
-
-    botLobby(channelId: string, bots: number) {
+    botLobby(channelId: string,userId:string, bots: number) {
         if (this.lobbies.has(channelId)) return null;
 
         const lobby = new Lobby(channelId);
@@ -97,7 +117,13 @@ export default class LobbyManager {
         }
 
         lobby.roles = RoleManager.DefaultMode(lobby.players.length);
+        lobby.timerSettings = {
+            missionSelectionSeconds: 30,
+            votingSeconds: 60,
+            missionSeconds: 30
+        };
         this.lobbies.set(channelId, lobby);
+        lobby.host = userId;
         return lobby;
     }
      addBots(channelId: string, bots: number) {
@@ -129,8 +155,5 @@ export default class LobbyManager {
     lobby.roles = RoleManager.updateRole(lobby.roles,lobby.players.length)
 
     return lobby;
-}
-
-
-    
+    }   
 }

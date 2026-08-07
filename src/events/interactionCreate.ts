@@ -47,8 +47,8 @@ export default {
             return client.handlers.buttonHandler.handle(interaction, client);
         }
 
-        if (interaction.isStringSelectMenu() && client.handlers.menuHandler) {
-            return client.handlers.menuHandler.handle(interaction, client);
+        if (interaction.isStringSelectMenu() && client.handlers.componentHandler) {
+            return client.handlers.componentHandler.handle(interaction, client);
         }
 
         if (interaction.isModalSubmit() && client.handlers.modalHandler) {

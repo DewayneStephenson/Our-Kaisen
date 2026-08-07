@@ -1,10 +1,16 @@
 import {
     SlashCommandBuilder,
     type ChatInputCommandInteraction,
-    type Client
+    type Client,
+    MessageFlags,
+    PermissionFlagsBits
 } from "discord.js";
 
+import  {EmbedCreator} from "../../ui/EmbedCreator.js"
+
 export default {
+    permissions: [PermissionFlagsBits.Administrator],
+
     data: new SlashCommandBuilder()
         .setName("remove_bots")
         .setDescription("Removes number of bots")
@@ -23,13 +29,13 @@ export default {
         if (!lobby) {
             return interaction.reply({
                 content: "No lobby exists here.",
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
         }
         if (!lobby.isBotLobby) {
             return interaction.reply({
             content: "Cannot use in a non-bot lobby.",
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
             });
         }
         const bots = interaction.options.getInteger("bots", true);
@@ -39,11 +45,11 @@ export default {
             try { await lobby.message?.delete(); } catch {}
             return interaction.reply({
                 content: "Lobby deleted due to having no players.",
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
         }
 
-        const embed = client.lobbyManager.buildEmbed(interaction.channelId);
+        const embed = EmbedCreator.lobby(lobby)
 
         if (updatedLobby.message) {
             await updatedLobby.message.edit({ embeds: [embed] });

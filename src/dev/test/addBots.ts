@@ -1,10 +1,16 @@
 import {
     SlashCommandBuilder,
     type ChatInputCommandInteraction,
-    type Client
+    type Client,
+    MessageFlags,
+    PermissionFlagsBits
 } from "discord.js";
 
+import  {EmbedCreator} from "../../ui/EmbedCreator.js"
+
 export default {
+    permissions: [PermissionFlagsBits.Administrator],
+
     data: new SlashCommandBuilder()
         .setName("add_bots")
         .setDescription("Add a number of bots")
@@ -22,20 +28,20 @@ export default {
         if (!lobby) {
             return interaction.reply({
                 content: "No lobby exists here.",
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
         }
         if (!lobby.isBotLobby) {
             return interaction.reply({
             content: "Bots cannot join a player lobby.",
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
             });
         }
         
         const bots = interaction.options.getInteger("bots", true);
         client.lobbyManager.addBots(interaction.channelId, bots);
 
-        const embed = client.lobbyManager.buildEmbed(interaction.channelId);
+        const embed = EmbedCreator.lobby(lobby);
 
         if (lobby.message) {
             await lobby.message.edit({ embeds: [embed] });
@@ -43,7 +49,7 @@ export default {
 
         return interaction.reply({
             content: "Successfully added bots.",
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
         });
     }
 };

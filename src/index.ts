@@ -15,8 +15,9 @@ import {
 import { loadCommandsFromFolder } from './utils/loadCommands.js';
 import { validateConfig } from './utils/configValidator.js';
 import * as logger from './utils/logger.js';
-import RoleManager from './game/RoleManager.js';
-import LobbyManager from './game/LobbyManager.js';
+import RoleManager from './lobby/LobbyRoleManager.js';
+import LobbyManager from './lobby/LobbyManager.js';
+import * as gameRegistry from './game/GameRegistry.js';
 import cooldownCleanup from './utils/cooldownCleanup.js';
 
 // Fix __dirname for ES modules
@@ -170,6 +171,7 @@ async function bootstrap() {
     // Game managers
     client.lobbyManager = new LobbyManager();
     client.roleManager = RoleManager;
+    client.gameRegistry = gameRegistry;
 
     // Login
     await client.login(process.env.TOKEN);

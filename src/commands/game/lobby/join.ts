@@ -1,8 +1,11 @@
 import {
     SlashCommandBuilder,
     type ChatInputCommandInteraction,
-    type Client
+    type Client,
+    MessageFlags
 } from "discord.js";
+
+import  {EmbedCreator} from "../../../ui/EmbedCreator.js"
 
 export default {
     data: new SlashCommandBuilder()
@@ -15,19 +18,19 @@ export default {
         if (!lobby) {
             return interaction.reply({
                 content: "No lobby exists here.",
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
         }
         if (lobby.isBotLobby) {
             return interaction.reply({
             content: "You cannot join a bot lobby.",
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
             });
 }
 
-        client.lobbyManager.addPlayer(interaction.channelId, interaction.user.id);
+        client.lobbyManager.addPlayer(interaction.channelId, interaction.user.id,interaction.user.username);
 
-        const embed = client.lobbyManager.buildEmbed(interaction.channelId);
+        const embed = EmbedCreator.lobby(lobby)
 
         if (lobby.message) {
             await lobby.message.edit({ embeds: [embed] });
@@ -35,7 +38,7 @@ export default {
 
         return interaction.reply({
             content: "You joined the lobby.",
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
         });
     }
 };

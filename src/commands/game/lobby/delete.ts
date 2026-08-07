@@ -1,9 +1,11 @@
 import {
     SlashCommandBuilder,
     type ChatInputCommandInteraction,
-    type Client
+    type Client,
+    MessageFlags
 } from "discord.js";
 
+import  {EmbedCreator} from "../../../ui/EmbedCreator.js"
 
 export default {
     data: new SlashCommandBuilder()
@@ -17,7 +19,7 @@ export default {
         if (!lobby) {
             return interaction.reply({
                 content: 'No active lobby exists. If an old lobby message is still visible, delete it manually.',
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
         }
 
@@ -33,7 +35,7 @@ export default {
 
         return interaction.reply({
             content: 'Lobby destroyed.',
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
         });
     },
 };

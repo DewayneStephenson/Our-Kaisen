@@ -1,8 +1,11 @@
 import {
+    MessageFlags,
     SlashCommandBuilder,
     type ChatInputCommandInteraction,
     type Client
 } from "discord.js";
+
+import  {EmbedCreator} from "../../../ui/EmbedCreator.js"
 
 export default {
     data: new SlashCommandBuilder()
@@ -15,7 +18,7 @@ export default {
         if (!lobby) {
             return interaction.reply({
                 content: "No lobby exists here.",
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
         }
 
@@ -28,11 +31,11 @@ export default {
             try { await lobby.message?.delete(); } catch {}
             return interaction.reply({
                 content: "Lobby deleted due to having no players.",
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
         }
 
-        const embed = client.lobbyManager.buildEmbed(interaction.channelId);
+        const embed = EmbedCreator.lobby(lobby);
 
         if (updatedLobby.message) {
             await updatedLobby.message.edit({ embeds: [embed] });
@@ -40,7 +43,7 @@ export default {
 
         return interaction.reply({
             content: "You left the lobby.",
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
         });
     }
 };

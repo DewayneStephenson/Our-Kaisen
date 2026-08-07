@@ -1,10 +1,12 @@
 import {
     SlashCommandBuilder,
     type ChatInputCommandInteraction,
-    type Client
+    type Client,
+    MessageFlags,
+    Message
 } from "discord.js";
 
-import RoleManager, { type RoleKey } from "../../../game/RoleManager.js";
+import RoleManager, { type RoleKey } from '../../../lobby/LobbyRoleManager.js';
 
 export default {
     data: new SlashCommandBuilder()
@@ -23,10 +25,15 @@ export default {
         if (!lobby) {
             return interaction.reply({
                 content: "A lobby has not been created.",
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
         }
-
+        if (lobby.host !== interaction.user.id) {
+            return interaction.reply({
+                content: "You are not the host!",
+                flags: MessageFlags.Ephemeral
+            }); 
+        }
         const roleName = interaction.options.getString("role", true) as RoleKey;
         const result = RoleManager.addRole(lobby.roles, roleName);
 
@@ -52,17 +59,16 @@ export default {
 
             return interaction.reply({
                 content: reason,
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
         }
 
         lobby.roles = result.newRoles;
 
         const embed = client.lobbyManager.buildEmbed(interaction.channelId);
-        const message = await interaction.reply({
-            embeds: [embed],
-            fetchReply: true
-        });
+        await interaction.reply({ embeds: [embed] });
+
+        const message = await interaction.fetchReply();
 
         lobby.message = message;
     }
