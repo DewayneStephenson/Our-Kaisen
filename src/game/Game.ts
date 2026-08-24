@@ -1,7 +1,12 @@
 // Game.ts
 import { randomUUID } from "node:crypto";
 import type Lobby from "../lobby/Lobby.js";
-import type { GamePhase, KaisenRole, TimerSettings } from "../types/game.js";
+import type {
+    GamePhase,
+    KaisenRole,
+    PhaseStage,
+    TimerSettings,
+} from "../types/game.js";
 import type Player from "./Player.js";
 
 export default class Game {
@@ -18,10 +23,13 @@ export default class Game {
     cleanupTimer: ReturnType<typeof setTimeout> | null;
     lobby: Lobby;
     players: Player[];
+    leaderIndex: number;
     roles: KaisenRole[];
     missionResults: Array<boolean | null>;
     missionCount: number;
     phase: GamePhase;
+    phaseStage: PhaseStage;
+    phaseTransitionInProgress: boolean;
     votes: Record<string, string>;
     expedition: string[];
     expeditionVotes: Record<string, "approve" | "reject">;
@@ -31,6 +39,7 @@ export default class Game {
     timerSettings: TimerSettings;
     phaseTimer: ReturnType<typeof setTimeout> | null;
     phaseWarningTimer: ReturnType<typeof setTimeout> | null;
+    phaseTimerVersion: number;
     phaseTimerEndsAt: number | null;
     actionWindowActive: boolean;
     voiceMuteTimers: Array<ReturnType<typeof setTimeout>>;
@@ -57,10 +66,13 @@ export default class Game {
         this.cleanupTimer = null;
         this.lobby = lobby;
         this.players = [];
+        this.leaderIndex = 0;
         this.roles = [];
         this.missionCount = 5;
         this.missionResults = Array(this.missionCount).fill(null);
         this.phase = "LOBBY";
+        this.phaseStage = "discussion";
+        this.phaseTransitionInProgress = false;
         this.votes = {};
         this.expedition = [];
         this.expeditionVotes = {};
@@ -70,6 +82,7 @@ export default class Game {
         this.timerSettings = { ...lobby.timerSettings };
         this.phaseTimer = null;
         this.phaseWarningTimer = null;
+        this.phaseTimerVersion = 0;
         this.phaseTimerEndsAt = null;
         this.actionWindowActive = false;
         this.voiceMuteTimers = [];

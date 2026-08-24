@@ -7,10 +7,7 @@ import {
 
 import MissionManager from "../../../../game/managers/MissionManager.js";
 import { refreshMissionMessage } from "../../../../utils/missionDebug.js";
-import {
-    actionWindowIsOpen,
-    scheduleMissionTimer,
-} from "../../../../utils/missionTimers.js";
+import { scheduleMissionTimer } from "../../../../utils/missionTimers.js";
 
 function parseVoteValue(value: string) {
     const normalized = value.trim().toLowerCase();
@@ -59,16 +56,9 @@ export default {
                 flags: MessageFlags.Ephemeral,
             });
         }
-        if (!actionWindowIsOpen(game)) {
-            return interaction.reply({
-                content: "Wait for action time to begin.",
-                flags: MessageFlags.Ephemeral,
-            });
-        }
 
         const missionManager = new MissionManager(game);
         const mode = interaction.options.getString("mode", true);
-        const phaseBeforeVote = game.phase;
 
         if (mode === "manual") {
             const voteInput = interaction.options.getString("vote");
@@ -89,14 +79,32 @@ export default {
                 });
             }
 
-            missionManager.castExpeditionVote(interaction.user.id, vote);
+            const voteResult = missionManager.castExpeditionVote(
+                interaction.user.id,
+                vote,
+            );
+            if (!voteResult.success) {
+                return interaction.reply({
+                    content: "Only players in this game can vote.",
+                    flags: MessageFlags.Ephemeral,
+                });
+            }
         } else {
             const vote = Math.random() < 0.5 ? "approve" : "reject";
-            missionManager.castExpeditionVote(interaction.user.id, vote);
+            const voteResult = missionManager.castExpeditionVote(
+                interaction.user.id,
+                vote,
+            );
+            if (!voteResult.success) {
+                return interaction.reply({
+                    content: "Only players in this game can vote.",
+                    flags: MessageFlags.Ephemeral,
+                });
+            }
         }
 
         if (
-            game.timerSettings.actionTimeSeconds === 0 &&
+            game.timerSettings.skipTimerWhenReady &&
             missionManager.allPlayersVoted()
         ) {
             if (missionManager.approvalPassed()) {
@@ -105,11 +113,9 @@ export default {
                 missionManager.rotateLeader();
                 missionManager.beginPlanning();
             }
-        }
-
-        if (game.phase !== phaseBeforeVote) {
             scheduleMissionTimer(client, game);
         }
+
         await refreshMissionMessage(interaction, game);
 
         return interaction.reply({

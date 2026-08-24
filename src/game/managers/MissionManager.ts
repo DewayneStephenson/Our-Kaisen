@@ -71,7 +71,7 @@ export default class MissionManager {
     }
 
     getLeader() {
-        return this.game.players[0] || null;
+        return this.game.players[this.game.leaderIndex] || null;
     }
 
     getRequiredTeamSize() {
@@ -91,6 +91,7 @@ export default class MissionManager {
 
     beginPlanning() {
         this.game.phase = "PLANNING";
+        this.game.phaseStage = "discussion";
         this.game.expedition = [];
         this.game.expeditionVotes = {};
         this.game.missionVotes = {};
@@ -106,11 +107,20 @@ export default class MissionManager {
 
     beginVoting() {
         this.game.phase = "VOTING";
+        this.game.phaseStage = "discussion";
         this.game.expeditionVotes = {};
         return { success: true };
     }
 
     castExpeditionVote(playerId: string, vote: ExpeditionVote) {
+        if (
+            !this.game.players.some((player) => player.discordId === playerId)
+        ) {
+            return { success: false, reason: "not_in_game" };
+        }
+        if (this.game.phase !== "VOTING") {
+            return { success: false, reason: "not_voting" };
+        }
         this.game.expeditionVotes[playerId] = vote;
         return { success: true };
     }
@@ -139,6 +149,7 @@ export default class MissionManager {
 
     beginMission() {
         this.game.phase = "MISSION";
+        this.game.phaseStage = "discussion";
         this.game.missionVotes = {};
         return { success: true };
     }
@@ -208,6 +219,7 @@ export default class MissionManager {
         this.game.sealingAssassinId = assassin?.discordId ?? null;
         this.game.sealingTargetId = null;
         this.game.phase = "SEALING";
+        this.game.phaseStage = "discussion";
         return { success: assassin !== null };
     }
 
@@ -246,6 +258,13 @@ export default class MissionManager {
     }
 
     resolveMission() {
+        if (
+            this.game.phase !== "MISSION" ||
+            this.game.phaseTransitionInProgress
+        ) {
+            throw new Error("Mission resolution is already in progress or unavailable.");
+        }
+        this.game.phaseTransitionInProgress = true;
         const fails = Object.values(this.game.missionVotes).filter(
             (vote) => vote === "fail",
         ).length;
@@ -283,7 +302,7 @@ export default class MissionManager {
             this.game.phase = "PLANNING";
         }
 
-        return {
+        const result = {
             success: true,
             data: {
                 fails,
@@ -293,6 +312,8 @@ export default class MissionManager {
                 votes: this.game.missionVoteResults[missionIndex] ?? [],
             },
         };
+        this.game.phaseTransitionInProgress = false;
+        return result;
     }
 
     resolve() {
@@ -300,10 +321,9 @@ export default class MissionManager {
     }
 
     rotateLeader() {
-        const leader = this.game.players.shift();
-
-        if (leader) {
-            this.game.players.push(leader);
+        if (this.game.players.length > 0) {
+            this.game.leaderIndex =
+                (this.game.leaderIndex + 1) % this.game.players.length;
         }
 
         return { success: true };

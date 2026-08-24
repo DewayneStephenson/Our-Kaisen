@@ -6,7 +6,6 @@ import {
 } from "discord.js";
 import MissionManager from "../../../../game/managers/MissionManager.js";
 import { refreshMissionMessage } from "../../../../utils/missionDebug.js";
-import { actionWindowIsOpen } from "../../../../utils/missionTimers.js";
 
 export default {
     data: new SlashCommandBuilder()
@@ -34,12 +33,6 @@ export default {
         if (game.phase !== "MISSION") {
             return interaction.reply({
                 content: "The game is not in the mission phase.",
-                flags: MessageFlags.Ephemeral,
-            });
-        }
-        if (!actionWindowIsOpen(game)) {
-            return interaction.reply({
-                content: "Wait for action time to begin.",
                 flags: MessageFlags.Ephemeral,
             });
         }

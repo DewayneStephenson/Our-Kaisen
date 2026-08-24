@@ -1,5 +1,7 @@
 import * as RoleClasses from "../game/GameRole.js";
 
+
+// Role Hierarchy: gojo, finger, sorcerer
 export const ROLES = {
     gojo: {
         key: "gojo",

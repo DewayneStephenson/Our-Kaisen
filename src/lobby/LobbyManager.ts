@@ -28,6 +28,7 @@ export default class LobbyManager {
             actionTimeSeconds: 5,
             phaseMuteEnabled: true,
             phaseChatLockEnabled: true,
+            skipTimerWhenReady: false,
         };
 
         this.lobbies.set(channelId, lobby);
@@ -125,6 +126,7 @@ export default class LobbyManager {
             actionTimeSeconds: 5,
             phaseMuteEnabled: true,
             phaseChatLockEnabled: true,
+            skipTimerWhenReady: false,
         };
         this.lobbies.set(channelId, lobby);
         lobby.host = userId;

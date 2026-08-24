@@ -2,15 +2,12 @@ import {
     type ChatInputCommandInteraction,
     type Client,
     MessageFlags,
-    PermissionFlagsBits,
     SlashCommandBuilder,
 } from "discord.js";
 
 import { EmbedCreator } from "../../../ui/EmbedCreator.js";
 
 export default {
-    permissions: [PermissionFlagsBits.Administrator],
-
     data: new SlashCommandBuilder()
         .setName("settings")
         .setDescription("Configure lobby timer settings")
@@ -18,7 +15,7 @@ export default {
             option
                 .setName("mission_selection")
                 .setDescription(
-                    "Seconds for the leader to select an expedition",
+                    "Seconds for the leader to create the mission plan",
                 )
                 .setMinValue(5)
                 .setMaxValue(300)
@@ -77,6 +74,14 @@ export default {
         )
         .addBooleanOption((option) =>
             option
+                .setName("skip_when_ready")
+                .setDescription(
+                    "Advance immediately when a phase has all required actions",
+                )
+                .setRequired(false),
+        )
+        .addBooleanOption((option) =>
+            option
                 .setName("phase_chat_lock")
                 .setDescription("Prevent chat during protected phase windows")
                 .setRequired(false),
@@ -108,6 +113,7 @@ export default {
         const title = interaction.options.getString("title");
         const phaseMute = interaction.options.getBoolean("phase_mute");
         const phaseChatLock = interaction.options.getBoolean("phase_chat_lock");
+        const skipWhenReady = interaction.options.getBoolean("skip_when_ready");
 
         if (missionSelection !== null) {
             lobby.timerSettings.missionSelectionSeconds = missionSelection;
@@ -137,6 +143,8 @@ export default {
             lobby.timerSettings.phaseMuteEnabled = phaseMute;
         if (phaseChatLock !== null)
             lobby.timerSettings.phaseChatLockEnabled = phaseChatLock;
+        if (skipWhenReady !== null)
+            lobby.timerSettings.skipTimerWhenReady = skipWhenReady;
 
         const embed = EmbedCreator.lobby(lobby);
 

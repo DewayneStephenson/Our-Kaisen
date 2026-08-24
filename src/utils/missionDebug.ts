@@ -45,19 +45,16 @@ export function pickRandomPlayers(players: Player[], count: number): Player[] {
 }
 
 export function buildMissionView(game: Game) {
-    const actionsAvailable =
-        game.timerSettings.actionTimeSeconds === 0 || game.actionWindowActive;
-    const components = !actionsAvailable
-        ? []
-        : game.phase === "PLANNING"
-          ? buildPlanningComponents(game)
-          : game.phase === "VOTING"
-            ? buildVotingComponents()
-            : game.phase === "MISSION"
-              ? buildMissionComponents(game)
-              : game.phase === "SEALING"
-                ? buildSealingComponents(game)
-                : [];
+    const components =
+        game.phase === "PLANNING"
+            ? buildPlanningComponents(game)
+            : game.phase === "VOTING"
+              ? buildVotingComponents()
+              : game.phase === "MISSION"
+                ? buildMissionComponents(game)
+                : game.phase === "SEALING"
+                  ? buildSealingComponents(game)
+                  : [];
 
     return {
         embeds: [EmbedCreator.mission(game)],

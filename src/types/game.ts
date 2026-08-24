@@ -7,6 +7,8 @@ export type GamePhase =
     | "MISSION"
     | "SEALING";
 
+export type PhaseStage = "discussion" | "action";
+
 export interface TimerSettings {
     missionSelectionSeconds: number;
     votingSeconds: number;
@@ -15,6 +17,7 @@ export interface TimerSettings {
     actionTimeSeconds: number;
     phaseMuteEnabled: boolean;
     phaseChatLockEnabled: boolean;
+    skipTimerWhenReady: boolean;
 }
 
 export interface KaisenRole {

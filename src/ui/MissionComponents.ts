@@ -35,7 +35,7 @@ export function buildPlanningComponents(game: Game) {
             new StringSelectMenuBuilder()
                 .setCustomId("mission_planning_select")
                 .setPlaceholder(
-                    `Select ${requiredTeamSize} players for the expedition`,
+                    `Select ${requiredTeamSize} players for the mission plan`,
                 )
                 .setMinValues(1)
                 .setMaxValues(requiredTeamSize)
@@ -49,7 +49,7 @@ export function buildVotingComponents() {
         new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
             new StringSelectMenuBuilder()
                 .setCustomId("mission_vote_select")
-                .setPlaceholder("Vote to approve or reject the expedition")
+                .setPlaceholder("Vote to approve or reject the mission plan")
                 .setMinValues(1)
                 .setMaxValues(1)
                 .addOptions([

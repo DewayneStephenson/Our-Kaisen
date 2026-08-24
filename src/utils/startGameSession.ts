@@ -139,14 +139,11 @@ export async function startGameSession(
 
     lobby.message = await channelResult.gameChannel.send({
         embeds: [EmbedCreator.mission(game)],
-        components:
-            game.timerSettings.actionTimeSeconds === 0
-                ? buildPlanningComponents(game)
-                : [],
+        components: buildPlanningComponents(game),
     });
     await postGameLog(
         game,
-        `🎮 **${lobby.title ?? "Kaisen Game"}** started. First expedition leader: <@${missionManager.getLeader()?.discordId}>.`,
+        `🎮 **${lobby.title ?? "Kaisen Game"}** started. First mission-planning leader: <@${missionManager.getLeader()?.discordId}>.`,
     );
 
     client.lobbyManager.deleteLobby(interaction.channelId);

@@ -31,6 +31,7 @@ export default class Lobby {
             actionTimeSeconds: 5,
             phaseMuteEnabled: true,
             phaseChatLockEnabled: true,
+            skipTimerWhenReady: false,
         };
         this.roles = []; // now stores role KEYS
         this.host = null;

@@ -1,6 +1,6 @@
 import { EmbedBuilder } from "discord.js";
 import type Game from "../game/Game.js";
-import {
+import MissionManager, {
     getMissionTeamSizes,
     getRequiredFails,
 } from "../game/managers/MissionManager.js";
@@ -36,6 +36,7 @@ export class EmbedCreator {
             `Action time: ${lobby.timerSettings.actionTimeSeconds}s`,
             `Phase voice mute: ${lobby.timerSettings.phaseMuteEnabled ? "enabled" : "disabled"}`,
             `Phase chat lock: ${lobby.timerSettings.phaseChatLockEnabled ? "enabled" : "disabled"}`,
+            `Skip timer when ready: ${lobby.timerSettings.skipTimerWhenReady ? "enabled" : "disabled"}`,
         ].join("\n");
 
         return new EmbedBuilder()
@@ -135,12 +136,12 @@ export class EmbedCreator {
             game.players.length,
             missionNumber,
         );
-        const leader = game.players[0];
+        const leader = new MissionManager(game).getLeader();
         const expedition = game.expedition.length
             ? game.expedition
                   .map((id) => EmbedCreator.playerLabel(game, id))
                   .join("\n")
-            : "No expedition selected yet.";
+            : "No mission plan selected yet.";
         const approvalVotes = Object.keys(game.expeditionVotes).length
             ? Object.entries(game.expeditionVotes)
                   .map(
@@ -161,6 +162,7 @@ export class EmbedCreator {
             `Action time: ${game.timerSettings.actionTimeSeconds}s`,
             `Phase voice mute: ${game.timerSettings.phaseMuteEnabled ? "enabled" : "disabled"}`,
             `Phase chat lock: ${game.timerSettings.phaseChatLockEnabled ? "enabled" : "disabled"}`,
+            `Skip timer when ready: ${game.timerSettings.skipTimerWhenReady ? "enabled" : "disabled"}`,
         ].join("\n");
         const phaseTimerText = game.phaseTimerEndsAt
             ? `<t:${Math.ceil(game.phaseTimerEndsAt / 1000)}:R> (ends <t:${Math.ceil(game.phaseTimerEndsAt / 1000)}:t>)`
@@ -202,7 +204,7 @@ export class EmbedCreator {
                     inline: true,
                 },
                 {
-                    name: "Expedition",
+                    name: "Mission Plan",
                     value: expedition,
                     inline: false,
                 },
@@ -237,7 +239,12 @@ export class EmbedCreator {
                     inline: false,
                 },
             )
-            .setFooter({ text: `Phase: ${game.phase}` });
+            .setFooter({
+                text:
+                    game.phaseStage === "action"
+                        ? `Phase: ${game.phase} • Action focus period (voice muted; controls remain available)`
+                        : `Phase: ${game.phase} • Discussion and revisions open`,
+            });
     }
 
     static missionResult(

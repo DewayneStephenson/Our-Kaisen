@@ -7,10 +7,7 @@ import {
 import MissionManager from "../../../../game/managers/MissionManager.js";
 import type Player from "../../../../game/Player.js";
 import { refreshMissionMessage } from "../../../../utils/missionDebug.js";
-import {
-    actionWindowIsOpen,
-    scheduleMissionTimer,
-} from "../../../../utils/missionTimers.js";
+import { scheduleMissionTimer } from "../../../../utils/missionTimers.js";
 
 function parseTokens(input: string) {
     return input
@@ -21,8 +18,8 @@ function parseTokens(input: string) {
 
 export default {
     data: new SlashCommandBuilder()
-        .setName("select_expedition")
-        .setDescription("Select the expedition for the human game")
+        .setName("select_mission_plan")
+        .setDescription("Select the mission plan for the human game")
         .addStringOption((option) =>
             option
                 .setName("mode")
@@ -55,13 +52,7 @@ export default {
         if (game.phase !== "PLANNING") {
             return interaction.reply({
                 content:
-                    "The game must be in planning before selecting an expedition.",
-                flags: MessageFlags.Ephemeral,
-            });
-        }
-        if (!actionWindowIsOpen(game)) {
-            return interaction.reply({
-                content: "Wait for action time to begin.",
+                    "The game must be in mission planning before selecting a team.",
                 flags: MessageFlags.Ephemeral,
             });
         }
@@ -111,26 +102,22 @@ export default {
 
         if (selectedIds.length !== requiredTeamSize) {
             return interaction.reply({
-                content: `The expedition must contain exactly ${requiredTeamSize} players.`,
+            content: `The mission plan must contain exactly ${requiredTeamSize} players.`,
                 flags: MessageFlags.Ephemeral,
             });
         }
 
         missionManager.setExpedition(selectedIds);
-        if (game.timerSettings.actionTimeSeconds > 0) {
-            await refreshMissionMessage(interaction, game);
-            return interaction.reply({
-                content:
-                    "Selected the expedition. It will be submitted when action time ends.",
-                flags: MessageFlags.Ephemeral,
-            });
+        if (game.timerSettings.skipTimerWhenReady) {
+            missionManager.beginVoting();
+            scheduleMissionTimer(client, game);
         }
-        missionManager.beginVoting();
-        scheduleMissionTimer(client, game);
         await refreshMissionMessage(interaction, game);
 
         return interaction.reply({
-            content: "Selected the expedition and advanced to voting.",
+            content: game.timerSettings.skipTimerWhenReady
+                ? "Mission plan selected; approval voting has started."
+                : "Mission plan saved. You can revise it until the phase ends.",
             flags: MessageFlags.Ephemeral,
         });
     },

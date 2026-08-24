@@ -57,7 +57,7 @@ export function clearPhaseVoiceMutes(client: Client, game: Game) {
 export function schedulePhaseVoiceMutes(
     client: Client,
     game: Game,
-    phaseSeconds: number,
+    _phaseSeconds: number,
 ) {
     clearPhaseVoiceMutes(client, game);
 
@@ -65,41 +65,7 @@ export function schedulePhaseVoiceMutes(
         return;
     }
 
-    if (game.phase === "MISSION") {
-        queueMuteUpdate(client, game, true);
-        return;
-    }
-
-    if (game.phase !== "PLANNING" && game.phase !== "VOTING") {
-        return;
-    }
-
-    const muteWindow = Math.min(
-        game.timerSettings.actionTimeSeconds,
-        phaseSeconds,
-    );
-
-    if (muteWindow <= 0) {
-        return;
-    }
-
+    // This is called only once the action/focus period starts. The next phase
+    // clears the mute, so no competing mute/unmute timers are needed.
     queueMuteUpdate(client, game, true);
-
-    if (muteWindow < phaseSeconds) {
-        game.voiceMuteTimers.push(
-            setTimeout(
-                () => queueMuteUpdate(client, game, false),
-                muteWindow * 1000,
-            ),
-        );
-    }
-
-    if (phaseSeconds > muteWindow * 2) {
-        game.voiceMuteTimers.push(
-            setTimeout(
-                () => queueMuteUpdate(client, game, true),
-                (phaseSeconds - muteWindow) * 1000,
-            ),
-        );
-    }
 }
