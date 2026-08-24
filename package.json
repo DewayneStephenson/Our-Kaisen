@@ -8,8 +8,10 @@
     "build:start": "npm run build && npm run start",
     "deploy": "npm run build && node dist/deploy-commands.js",
     "deploy:global": "npm run build && node dist/deploy-commands.js --global",
-    "lint": "biome lint src",
-    "lint:fix": "biome lint --write src",
+    "lint": "biome lint src tests scripts",
+    "lint:fix": "biome lint --write src tests scripts",
+    "test": "tsc -p tsconfig.test.json && node --test .test-dist/tests/*.test.js",
+    "test:watch": "node scripts/test-watch.mjs",
     "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
     "build": "npm run clean && tsc"
   },
