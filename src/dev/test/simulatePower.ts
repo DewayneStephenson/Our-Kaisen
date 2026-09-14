@@ -6,6 +6,7 @@ import {
     SlashCommandBuilder,
 } from "discord.js";
 import type Player from "../../game/Player.js";
+import { findActiveGame } from "../../game/services/GameAccess.js";
 import {
     findPlayerByToken,
     refreshMissionMessage,
@@ -35,14 +36,18 @@ export default {
         ),
 
     async execute(interaction: ChatInputCommandInteraction, client: Client) {
-        const game = client.gameRegistry.getGame(interaction.channelId);
-
-        if (!game?.started || !game.lobby.isBotLobby) {
+        const access = findActiveGame(
+            client,
+            interaction.channelId,
+            "automated",
+        );
+        if (!access.success) {
             return interaction.reply({
                 content: "No started bot game exists in this channel.",
                 flags: MessageFlags.Ephemeral,
             });
         }
+        const { game } = access;
 
         if (game.phase !== "MISSION") {
             return interaction.reply({

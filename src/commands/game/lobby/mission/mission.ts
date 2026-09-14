@@ -5,6 +5,7 @@ import {
     SlashCommandBuilder,
 } from "discord.js";
 import MissionManager from "../../../../game/managers/MissionManager.js";
+import { findActiveGame } from "../../../../game/services/GameAccess.js";
 import { refreshMissionMessage } from "../../../../utils/missionDebug.js";
 
 export default {
@@ -23,13 +24,14 @@ export default {
         ),
 
     async execute(interaction: ChatInputCommandInteraction, client: Client) {
-        const game = client.gameRegistry.getGame(interaction.channelId);
-        if (!game?.started || game.lobby.isBotLobby) {
+        const access = findActiveGame(client, interaction.channelId, "player");
+        if (!access.success) {
             return interaction.reply({
-                content: "No started human game exists in this channel.",
+                content: "No active player-run game exists in this channel.",
                 flags: MessageFlags.Ephemeral,
             });
         }
+        const { game } = access;
         if (game.phase !== "MISSION") {
             return interaction.reply({
                 content: "The game is not in the mission phase.",

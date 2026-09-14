@@ -56,15 +56,77 @@ describe("mission configuration", () => {
 });
 
 describe("MissionManager", () => {
-    it("initializes planning and voting state", () => {
-        const game = createGame([player("one"), player("two")]);
+    it("rejects invalid expedition plans without mutating game state", () => {
+        const game = createGame([
+            player("one"),
+            player("two"),
+            player("three"),
+            player("four"),
+            player("five"),
+        ]);
+        const manager = new MissionManager(game);
+
+        assert.equal(manager.setExpedition(["one", "two"]).success, false);
+        manager.beginSelection();
+        assert.deepEqual(manager.setExpedition(["one"]), {
+            success: false,
+            reason: "invalid_team_size",
+        });
+        assert.deepEqual(manager.setExpedition(["one", "one"]), {
+            success: false,
+            reason: "duplicate_player",
+        });
+        assert.deepEqual(manager.setExpedition(["one", "outsider"]), {
+            success: false,
+            reason: "player_not_found",
+        });
+        assert.deepEqual(game.expedition, []);
+    });
+
+    it("rejects phase transitions when their prerequisites are not met", () => {
+        const game = createGame([
+            player("one"),
+            player("two"),
+            player("three"),
+            player("four"),
+            player("five"),
+        ]);
+        const manager = new MissionManager(game);
+
+        assert.deepEqual(manager.beginVoting(), {
+            success: false,
+            reason: "not_selection",
+        });
+        manager.beginSelection();
+        assert.deepEqual(manager.beginVoting(), {
+            success: false,
+            reason: "invalid_team_size",
+        });
+        assert.deepEqual(manager.beginMission(), {
+            success: false,
+            reason: "not_voting",
+        });
+        assert.deepEqual(manager.castMissionVote("one", "pass"), {
+            success: false,
+            reason: "not_mission",
+        });
+    });
+
+    it("initializes selection and voting state", () => {
+        const game = createGame([
+            player("one"),
+            player("two"),
+            player("three"),
+            player("four"),
+            player("five"),
+        ]);
         const manager = new MissionManager(game);
         game.expedition = ["one"];
         game.expeditionVotes = { one: "approve" };
         game.missionVotes = { one: "pass" };
 
-        manager.beginPlanning();
-        assert.equal(game.phase, "PLANNING");
+        manager.beginSelection();
+        assert.equal(game.phase, "SELECTION");
         assert.deepEqual(game.expedition, []);
         assert.deepEqual(game.expeditionVotes, {});
         assert.deepEqual(game.missionVotes, {});
@@ -76,7 +138,13 @@ describe("MissionManager", () => {
     });
 
     it("accepts expedition votes only from players during voting", () => {
-        const game = createGame([player("one"), player("two")]);
+        const game = createGame([
+            player("one"),
+            player("two"),
+            player("three"),
+            player("four"),
+            player("five"),
+        ]);
         const manager = new MissionManager(game);
 
         assert.deepEqual(manager.castExpeditionVote("one", "approve"), {
@@ -84,6 +152,8 @@ describe("MissionManager", () => {
             reason: "not_voting",
         });
 
+        manager.beginSelection();
+        manager.setExpedition(["one", "two"]);
         manager.beginVoting();
         assert.deepEqual(manager.castExpeditionVote("outsider", "reject"), {
             success: false,
@@ -99,6 +169,10 @@ describe("MissionManager", () => {
             approve: 1,
             reject: 1,
         });
+        assert.equal(manager.allPlayersVoted(), false);
+        manager.castExpeditionVote("three", "reject");
+        manager.castExpeditionVote("four", "reject");
+        manager.castExpeditionVote("five", "reject");
         assert.equal(manager.allPlayersVoted(), true);
         assert.equal(manager.approvalPassed(), false);
     });
@@ -107,9 +181,14 @@ describe("MissionManager", () => {
         const game = createGame([
             player("sorcerer"),
             player("curse", "Curse"),
+            player("three"),
+            player("four"),
+            player("five"),
         ]);
         const manager = new MissionManager(game);
+        manager.beginSelection();
         manager.setExpedition(["sorcerer", "curse"]);
+        manager.beginVoting();
         manager.beginMission();
 
         assert.deepEqual(manager.castMissionVote("outsider", "pass"), {
@@ -137,7 +216,9 @@ describe("MissionManager", () => {
             player("five"),
         ]);
         const manager = new MissionManager(game);
+        manager.beginSelection();
         manager.setExpedition(["one", "two"]);
+        manager.beginVoting();
         manager.beginMission();
         manager.castMissionVote("one", "pass");
         manager.castMissionVote("two", "fail");
@@ -156,7 +237,7 @@ describe("MissionManager", () => {
             ["fail", "pass"],
         );
         assert.equal(game.leaderIndex, 1);
-        assert.equal(game.phase, "PLANNING");
+        assert.equal(game.phase, "SELECTION");
         assert.equal(game.phaseTransitionInProgress, false);
     });
 
@@ -170,7 +251,9 @@ describe("MissionManager", () => {
         ]);
         game.missionResults = [true, true, null, null, null];
         const manager = new MissionManager(game);
+        manager.beginSelection();
         manager.setExpedition(["gojo", "three"]);
+        manager.beginVoting();
         manager.beginMission();
         manager.castMissionVote("gojo", "pass");
         manager.castMissionVote("three", "pass");

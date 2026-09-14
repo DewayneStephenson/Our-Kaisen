@@ -7,6 +7,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import logger from "./logger.js";
+import { errorMessage } from "./errors.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const STATS_FILE = path.join(__dirname, "commandStats.json");
@@ -55,8 +56,8 @@ export default class CommandUsageTracker {
                     `Loaded ${this.stats.size} tracked commands from file`,
                 );
             }
-        } catch (error: any) {
-            logger.warn(`Failed to load command stats: ${error.message}`);
+        } catch (error) {
+            logger.warn(`Failed to load command stats: ${errorMessage(error)}`);
         }
     }
 
@@ -83,8 +84,8 @@ export default class CommandUsageTracker {
                     JSON.stringify(data, null, 2),
                     "utf8",
                 );
-            } catch (error: any) {
-                logger.warn(`Failed to save command stats: ${error.message}`);
+            } catch (error) {
+                logger.warn(`Failed to save command stats: ${errorMessage(error)}`);
             }
         });
     }

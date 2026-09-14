@@ -15,7 +15,7 @@ function interactionPlayerName(game: Game, playerId: string, fallback: string) {
     );
 }
 
-export function buildPlanningComponents(game: Game) {
+export function buildSelectionComponents(game: Game) {
     const missionIndex = game.missionResults.indexOf(null);
     const requiredTeamSize =
         getMissionTeamSizes(game.players.length)[missionIndex] ?? 0;
@@ -33,7 +33,7 @@ export function buildPlanningComponents(game: Game) {
     return [
         new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
             new StringSelectMenuBuilder()
-                .setCustomId("mission_planning_select")
+                .setCustomId("mission_selection_select")
                 .setPlaceholder(
                     `Select ${requiredTeamSize} players for the mission plan`,
                 )

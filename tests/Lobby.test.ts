@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import Lobby from "../src/lobby/Lobby.js";
 import LobbyManager from "../src/lobby/LobbyManager.js";
 import RoleManager from "../src/lobby/LobbyRoleManager.js";
+import { EmbedCreator } from "../src/ui/EmbedCreator.js";
 
 describe("LobbyRoleManager", () => {
     it("creates the expected alignment mix for a five-player lobby", () => {
@@ -20,7 +21,8 @@ describe("LobbyRoleManager", () => {
         const defaults = RoleManager.DefaultMode(5);
         const added = RoleManager.addRole(defaults, "yuta");
         assert.equal(added.success, true);
-        assert.equal(added.newRoles?.includes("yuta"), true);
+        if (!added.success) assert.fail("Expected role addition to succeed");
+        assert.equal(added.newRoles.includes("yuta"), true);
         assert.deepEqual(defaults, RoleManager.DefaultMode(5));
 
         const removed = RoleManager.removeRole(added.newRoles ?? [], "yuta");
@@ -32,8 +34,12 @@ describe("LobbyRoleManager", () => {
     it("protects required roles and rejects duplicate optional roles", () => {
         const defaults = RoleManager.DefaultMode(5);
         assert.equal(RoleManager.removeRole(defaults, "gojo").reason, "required");
-        const withYuta = RoleManager.addRole(defaults, "yuta").newRoles ?? [];
-        assert.equal(RoleManager.addRole(withYuta, "yuta").reason, "dupe");
+        const addition = RoleManager.addRole(defaults, "yuta");
+        if (!addition.success) assert.fail("Expected role addition to succeed");
+        assert.equal(
+            RoleManager.addRole(addition.newRoles, "yuta").reason,
+            "dupe",
+        );
     });
 
     it("updates the role count when the lobby size changes", () => {
@@ -92,10 +98,9 @@ describe("LobbyManager", () => {
         if (!lobby) assert.fail("Expected lobby to be created");
         lobby.roles = ["gojo", "finger"];
 
-        const embed = manager.buildEmbed("channel")?.toJSON();
+        const embed = EmbedCreator.lobby(lobby).toJSON();
         assert.equal(embed?.title, "Lobby");
         assert.match(embed?.fields?.[0]?.value ?? "", /<@host>/);
-        assert.match(embed?.fields?.[1]?.value ?? "", /Honored One/);
-        assert.equal(manager.buildEmbed("missing"), null);
+        assert.match(embed?.fields?.[3]?.value ?? "", /Honored One/);
     });
 });

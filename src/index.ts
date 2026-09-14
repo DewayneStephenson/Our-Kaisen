@@ -6,12 +6,23 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { Client, Collection, Events, GatewayIntentBits } from "discord.js";
-import * as gameRegistry from "./game/GameRegistry.js";
+import {
+    ActivityType,
+    Client,
+    Collection,
+    Events,
+    GatewayIntentBits,
+} from "discord.js";
+import GameRegistry from "./game/GameRegistry.js";
 import LobbyManager from "./lobby/LobbyManager.js";
 import RoleManager from "./lobby/LobbyRoleManager.js";
 import { validateConfig } from "./utils/configValidator.js";
 import cooldownCleanup from "./utils/cooldownCleanup.js";
+import { errorMessage } from "./utils/errors.js";
+import {
+    executeEventSafely,
+    type LoadedEvent,
+} from "./utils/eventExecution.js";
 import { loadCommandsFromFolder } from "./utils/loadCommands.js";
 import * as logger from "./utils/logger.js";
 
@@ -33,7 +44,13 @@ if (!process.env.TOKEN) {
 // Create client
 const client = new Client({
     intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates],
-}) as any;
+});
+
+function isLoadedEvent(value: unknown): value is LoadedEvent {
+    if (!value || typeof value !== "object") return false;
+    const event = value as Record<string, unknown>;
+    return typeof event.name === "string" && typeof event.execute === "function";
+}
 
 // Custom client properties
 client.commands = new Collection();
@@ -104,12 +121,16 @@ async function bootstrap() {
             let name = file.replace(".js", "");
             name = name.replace(/handler$/, "Handler");
 
-            client.handlers[name] = handlerModule.default ?? handlerModule;
+            Object.assign(client.handlers, {
+                [name]: handlerModule.default ?? handlerModule,
+            });
 
             logger.debug(`Loaded handler: ${name}`);
             loadedHandlers++;
-        } catch (error: any) {
-            logger.error(`Failed to load handler ${file}: ${error.message}`);
+        } catch (error) {
+            logger.error(
+                `Failed to load handler ${file}: ${errorMessage(error)}`,
+            );
         }
     }
 
@@ -129,10 +150,11 @@ async function bootstrap() {
     for (const file of eventFiles) {
         try {
             const filePath = path.join(eventsPath, file);
-            const eventModule = await import(pathToFileURL(filePath).href);
+            const imported: unknown = await import(pathToFileURL(filePath).href);
+            const eventModule = imported as Record<string, unknown>;
             const event = eventModule.default ?? eventModule;
 
-            if (!event.name || !event.execute) {
+            if (!isLoadedEvent(event)) {
                 logger.warn(
                     `Event ${file} is missing "name" or "execute" property`,
                 );
@@ -140,30 +162,26 @@ async function bootstrap() {
             }
 
             if (event.once) {
-                client.once(event.name, (...args: any[]) => {
-                    try {
-                        event.execute(...args, client);
-                    } catch (err: any) {
+                client.once(event.name, (...args: unknown[]) =>
+                    executeEventSafely(event, args, client, (error) => {
                         logger.error(
-                            `Event ${event.name} threw error: ${err.message}`,
+                            `Event ${event.name} threw error: ${errorMessage(error)}`,
                         );
-                    }
-                });
+                    }),
+                );
             } else {
-                client.on(event.name, (...args: any[]) => {
-                    try {
-                        event.execute(...args, client);
-                    } catch (err: any) {
+                client.on(event.name, (...args: unknown[]) =>
+                    executeEventSafely(event, args, client, (error) => {
                         logger.error(
-                            `Event ${event.name} threw error: ${err.message}`,
+                            `Event ${event.name} threw error: ${errorMessage(error)}`,
                         );
-                    }
-                });
+                    }),
+                );
             }
 
             loadedEvents++;
-        } catch (error: any) {
-            logger.error(`Failed to load event ${file}: ${error.message}`);
+        } catch (error) {
+            logger.error(`Failed to load event ${file}: ${errorMessage(error)}`);
         }
     }
 
@@ -174,14 +192,16 @@ async function bootstrap() {
 
     // Activity
     client.once(Events.ClientReady, () => {
-        client.user?.setActivity("/help - Get started", { type: "LISTENING" });
+        client.user?.setActivity("/help - Get started", {
+            type: ActivityType.Listening,
+        });
         logger.debug("Bot activity set");
     });
 
     // Game managers
     client.lobbyManager = new LobbyManager();
     client.roleManager = RoleManager;
-    client.gameRegistry = gameRegistry;
+    client.gameRegistry = new GameRegistry();
 
     // Login
     await client.login(process.env.TOKEN);
@@ -190,6 +210,6 @@ async function bootstrap() {
 
 // Start bootstrap
 bootstrap().catch((err) => {
-    logger.error(`Fatal startup error: ${err.message}`);
+    logger.error(`Fatal startup error: ${errorMessage(err)}`);
     process.exit(1);
 });

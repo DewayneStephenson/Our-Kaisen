@@ -6,7 +6,7 @@ import type Lobby from "../lobby/Lobby.js";
 import RoleManager, { type RoleKey } from "../lobby/LobbyRoleManager.js";
 import type { KaisenRole } from "../types/game.js";
 import { EmbedCreator } from "../ui/EmbedCreator.js";
-import { buildPlanningComponents } from "../ui/MissionComponents.js";
+import { buildSelectionComponents } from "../ui/MissionComponents.js";
 import { createGameChannels, postGameLog } from "./gameChannels.js";
 import * as logger from "./logger.js";
 import { scheduleMissionTimer } from "./missionTimers.js";
@@ -66,7 +66,7 @@ export async function startGameSession(
     const assignmentResult = roleManager.assignRoles(players);
 
     if (!assignmentResult.success) {
-        client.gameRegistry.deleteGame(interaction.channelId);
+        client.gameRegistry.deleteGame(interaction.channelId, client);
         return {
             success: false,
             message: "Failed to assign roles to players.",
@@ -75,16 +75,16 @@ export async function startGameSession(
 
     game.players = players;
     game.started = true;
-    game.phase = "PLANNING";
+    game.phase = "SELECTION";
 
     const missionManager = new MissionManager(game);
-    missionManager.beginPlanning();
+    missionManager.beginSelection();
 
     let channelResult: Awaited<ReturnType<typeof createGameChannels>>;
     try {
         channelResult = await createGameChannels(interaction, game);
     } catch (error) {
-        client.gameRegistry.deleteGame(game.channelId);
+        client.gameRegistry.deleteGame(game.channelId, client);
         return {
             success: false,
             message: `Could not create game channels: ${error instanceof Error ? error.message : String(error)}`,
@@ -92,7 +92,7 @@ export async function startGameSession(
     }
 
     if (!channelResult.success) {
-        client.gameRegistry.deleteGame(game.channelId);
+        client.gameRegistry.deleteGame(game.channelId, client);
         return { success: false, message: channelResult.message };
     }
 
@@ -139,11 +139,11 @@ export async function startGameSession(
 
     lobby.message = await channelResult.gameChannel.send({
         embeds: [EmbedCreator.mission(game)],
-        components: buildPlanningComponents(game),
+        components: buildSelectionComponents(game),
     });
     await postGameLog(
         game,
-        `🎮 **${lobby.title ?? "Kaisen Game"}** started. First mission-planning leader: <@${missionManager.getLeader()?.discordId}>.`,
+        `🎮 **${lobby.title ?? "Kaisen Game"}** started. First selection leader: <@${missionManager.getLeader()?.discordId}>.`,
     );
 
     client.lobbyManager.deleteLobby(interaction.channelId);

@@ -1,6 +1,7 @@
 import type { Client } from "discord.js";
 import type Game from "../game/Game.js";
 import MissionManager from "../game/managers/MissionManager.js";
+import { resolveExpeditionVote } from "../game/services/MissionFlowService.js";
 import type Player from "../game/Player.js";
 import { postGameLog } from "./gameChannels.js";
 import * as logger from "./logger.js";
@@ -49,21 +50,17 @@ function fillVotingTimeout(game: Game) {
     for (const player of game.players) {
         if (game.expeditionVotes[player.discordId]) continue;
 
-        const vote = Math.random() < 0.5 ? "approve" : "reject";
+        // Automated games remain random. In player-run games, a missing vote
+        // becomes a deterministic rejection rather than impersonating a player.
+        const vote =
+            game.lobby.isBotLobby && Math.random() < 0.5
+                ? "approve"
+                : "reject";
         missionManager.castExpeditionVote(player.discordId, vote);
     }
 
-    const approvalPassed = missionManager.approvalPassed();
     const votes = { ...game.expeditionVotes };
-
-    if (approvalPassed) {
-        missionManager.beginMission();
-        return { votes, approvalPassed };
-    }
-
-    missionManager.rotateLeader();
-    missionManager.beginPlanning();
-    return { votes, approvalPassed };
+    return { votes, ...resolveExpeditionVote(missionManager) };
 }
 
 function fillMissionTimeout(game: Game) {
@@ -108,8 +105,8 @@ export function actionWindowIsOpen(game: Game) {
 }
 
 function phaseLabel(game: Game) {
-    return game.phase === "PLANNING"
-        ? "mission planning"
+    return game.phase === "SELECTION"
+        ? "mission selection"
         : game.phase === "VOTING"
           ? "approval voting"
           : game.phase === "MISSION"
@@ -129,9 +126,9 @@ async function resolvePhase(
     currentGame.phaseStage = "discussion";
     let logMessage = "";
 
-    if (currentGame.phase === "PLANNING") {
+    if (currentGame.phase === "SELECTION") {
         fillPlanningTimeout(currentGame);
-        logMessage = `⏱️ Mission planning closed. <@${new MissionManager(currentGame).getLeader()?.discordId}> proposed: ${currentGame.expedition.map((playerId) => `<@${playerId}>`).join(", ")}.`;
+        logMessage = `⏱️ Mission selection closed. <@${new MissionManager(currentGame).getLeader()?.discordId}> proposed: ${currentGame.expedition.map((playerId) => `<@${playerId}>`).join(", ")}.`;
     } else if (currentGame.phase === "VOTING") {
         const voteResult = fillVotingTimeout(currentGame);
         logMessage = `⏱️ Approval voting closed. ${voteResult.approvalPassed ? "Mission plan approved." : `Mission plan rejected. Next leader: <@${new MissionManager(currentGame).getLeader()?.discordId}>.`}`;
@@ -161,7 +158,7 @@ export function scheduleMissionTimer(client: Client, game: Game) {
     const scheduledPhase = game.phase;
 
     const seconds =
-        game.phase === "PLANNING"
+        game.phase === "SELECTION"
             ? game.timerSettings.missionSelectionSeconds
             : game.phase === "VOTING"
               ? game.timerSettings.votingSeconds

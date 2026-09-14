@@ -32,14 +32,14 @@ export default class GameManager {
 
         this.game.players = this.players.getAll();
         this.game.started = true;
-        this.game.phase = "PLANNING";
-        this.phases.setPhase("PLANNING");
+        this.game.phase = "SELECTION";
+        this.phases.setPhase("SELECTION");
 
         return { success: true };
     }
 
     startVoting() {
-        const check = this.phases.require("PLANNING");
+        const check = this.phases.require("SELECTION");
         if (!check.success) return check;
 
         this.votes.start();

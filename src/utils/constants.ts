@@ -6,6 +6,17 @@ export const NODE_ENV = process.env.NODE_ENV || "production";
 export const DEFAULT_COOLDOWN_SECONDS = 3;
 export const MS_PER_SECOND = 1000;
 
+export const DEFAULT_TIMER_SETTINGS = {
+    missionSelectionSeconds: 30,
+    votingSeconds: 60,
+    missionSeconds: 30,
+    sealingSeconds: 30,
+    actionTimeSeconds: 5,
+    phaseMuteEnabled: true,
+    phaseChatLockEnabled: true,
+    skipTimerWhenReady: false,
+} as const;
+
 // Discord intents
 export const DEFAULT_INTENTS = ["Guilds"];
 

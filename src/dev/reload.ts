@@ -2,10 +2,13 @@ import { pathToFileURL } from "node:url";
 import {
     type ChatInputCommandInteraction,
     type Client,
+    PermissionFlagsBits,
     SlashCommandBuilder,
 } from "discord.js";
 
 export default {
+    permissions: [PermissionFlagsBits.Administrator],
+
     data: new SlashCommandBuilder()
         .setName("reload")
         .setDescription("Reload a command")

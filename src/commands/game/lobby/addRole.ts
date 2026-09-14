@@ -5,7 +5,7 @@ import {
     SlashCommandBuilder,
 } from "discord.js";
 
-import RoleManager, { type RoleKey } from "../../../lobby/LobbyRoleManager.js";
+import RoleManager from "../../../lobby/LobbyRoleManager.js";
 import { EmbedCreator } from "../../../ui/EmbedCreator.js";
 
 export default {
@@ -34,7 +34,7 @@ export default {
                 flags: MessageFlags.Ephemeral,
             });
         }
-        const roleName = interaction.options.getString("role", true) as RoleKey;
+        const roleName = interaction.options.getString("role", true);
         const result = RoleManager.addRole(lobby.roles, roleName);
 
         if (!result.success) {

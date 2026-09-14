@@ -8,9 +8,6 @@ import {
 } from "discord.js";
 import type Game from "../game/Game.js";
 import * as logger from "./logger.js";
-import { clearPhaseChatLocks } from "./missionChat.js";
-import { clearMissionTimer } from "./missionTimers.js";
-import { clearPhaseVoiceMutes } from "./missionVoice.js";
 
 function channelName(title: string, suffix: string) {
     const slug =
@@ -246,46 +243,64 @@ export async function postGameLog(game: Game, content: string) {
     }
 }
 
-export function scheduleGameCleanup(client: Client, game: Game) {
-    if (game.cleanupTimer) return;
+export async function destroyGameSession(client: Client, game: Game) {
+    // Remove the game first so no new interactions can find it while Discord
+    // resources are being deleted. Registry cleanup also cancels every timer.
+    client.gameRegistry.deleteGame(game.channelId, client);
 
-    game.cleanupTimer = setTimeout(async () => {
-        clearMissionTimer(game);
-        clearPhaseVoiceMutes(client, game);
-        clearPhaseChatLocks(client, game);
-
+    if (game.voiceChannelId) {
         try {
-            const channel = await client.channels.fetch(game.channelId);
+            const voiceChannel = await client.channels.fetch(
+                game.voiceChannelId,
+            );
             if (
-                channel &&
-                "delete" in channel &&
-                typeof channel.delete === "function"
+                voiceChannel &&
+                "delete" in voiceChannel &&
+                typeof voiceChannel.delete === "function"
             ) {
-                await channel.delete("Kaisen game finished");
-            }
-            if (game.voiceChannelId) {
-                const voiceChannel = await client.channels.fetch(
-                    game.voiceChannelId,
-                );
-                if (
-                    voiceChannel &&
-                    "delete" in voiceChannel &&
-                    typeof voiceChannel.delete === "function"
-                ) {
-                    await voiceChannel.delete("Kaisen game finished");
-                }
-            }
-            if (game.guildId && game.participantRoleId) {
-                const guild = await client.guilds.fetch(game.guildId);
-                const role = await guild.roles.fetch(game.participantRoleId);
-                await role?.delete("Kaisen game finished");
+                await voiceChannel.delete("Kaisen game finished");
             }
         } catch (error) {
             logger.error(
-                `[${game.channelId}] Failed to delete game channel: ${error instanceof Error ? error.message : String(error)}`,
+                `[${game.channelId}] Failed to delete game voice channel: ${error instanceof Error ? error.message : String(error)}`,
             );
         }
+    }
 
-        client.gameRegistry.deleteGame(game.channelId);
+    if (game.guildId && game.participantRoleId) {
+        try {
+            const guild = await client.guilds.fetch(game.guildId);
+            const role = await guild.roles.fetch(game.participantRoleId);
+            await role?.delete("Kaisen game finished");
+        } catch (error) {
+            logger.error(
+                `[${game.channelId}] Failed to delete participant role: ${error instanceof Error ? error.message : String(error)}`,
+            );
+        }
+    }
+
+    // Delete the text channel last so commands can acknowledge the request
+    // before the interaction's channel disappears.
+    try {
+        const channel = await client.channels.fetch(game.channelId);
+        if (
+            channel &&
+            "delete" in channel &&
+            typeof channel.delete === "function"
+        ) {
+            await channel.delete("Kaisen game finished");
+        }
+    } catch (error) {
+        logger.error(
+            `[${game.channelId}] Failed to delete game text channel: ${error instanceof Error ? error.message : String(error)}`,
+        );
+    }
+}
+
+export function scheduleGameCleanup(client: Client, game: Game) {
+    if (game.cleanupTimer) return;
+
+    game.cleanupTimer = setTimeout(() => {
+        void destroyGameSession(client, game);
     }, 60_000);
 }

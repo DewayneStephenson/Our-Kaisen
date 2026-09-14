@@ -33,7 +33,7 @@ export function schedulePhaseChatLocks(
     const lock = (locked: boolean) =>
         void setChatLocked(client, game, locked).catch(() => undefined);
     if (game.phase === "MISSION") return lock(true);
-    if (game.phase !== "PLANNING" && game.phase !== "VOTING")
+    if (game.phase !== "SELECTION" && game.phase !== "VOTING")
         return lock(false);
 
     const window = Math.min(game.timerSettings.actionTimeSeconds, phaseSeconds);

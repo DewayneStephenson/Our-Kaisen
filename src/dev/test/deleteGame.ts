@@ -7,6 +7,7 @@ import {
 } from "discord.js";
 
 import * as logger from "../../utils/logger.js";
+import { destroyGameSession } from "../../utils/gameChannels.js";
 
 export default {
     permissions: [PermissionFlagsBits.Administrator],
@@ -37,12 +38,11 @@ export default {
             }
         }
 
-        client.lobbyManager.lobbies.delete(interaction.channelId);
-        client.gameRegistry.deleteGame(interaction.channelId);
-
-        return interaction.reply({
-            content: "Deleted the active game.",
+        await interaction.reply({
+            content: "Deleting the game text channel, voice channel, and participant role.",
             flags: MessageFlags.Ephemeral,
         });
+        client.lobbyManager.deleteLobby(game.lobbyChannelId);
+        await destroyGameSession(client, game);
     },
 };

@@ -1,3 +1,4 @@
+import type { Client } from "discord.js";
 import * as logger from "./logger.js";
 
 /**
@@ -10,7 +11,7 @@ export const cooldownCleanup = {
      * @param client - The Discord client
      * @param intervalMs - Interval between cleanups (default: 5 minutes)
      */
-    startCleanupTimer(client: any, intervalMs = 5 * 60 * 1000) {
+    startCleanupTimer(client: Client, intervalMs = 5 * 60 * 1000) {
         setInterval(() => {
             const now = Date.now();
             let totalCleaned = 0;

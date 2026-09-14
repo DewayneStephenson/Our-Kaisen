@@ -6,8 +6,9 @@ import {
 } from "discord.js";
 
 import MissionManager from "../../../../game/managers/MissionManager.js";
+import { findActiveGame } from "../../../../game/services/GameAccess.js";
+import MissionCoordinator from "../../../../game/services/MissionCoordinator.js";
 import { refreshMissionMessage } from "../../../../utils/missionDebug.js";
-import { scheduleMissionTimer } from "../../../../utils/missionTimers.js";
 
 function parseVoteValue(value: string) {
     const normalized = value.trim().toLowerCase();
@@ -22,33 +23,27 @@ function parseVoteValue(value: string) {
 export default {
     data: new SlashCommandBuilder()
         .setName("vote_mission")
-        .setDescription("Cast votes for the human mission")
-        .addStringOption((option) =>
-            option
-                .setName("mode")
-                .setDescription("Vote randomly or manually")
-                .addChoices(
-                    { name: "Random", value: "random" },
-                    { name: "Manual", value: "manual" },
-                )
-                .setRequired(true),
-        )
+        .setDescription("Vote to approve or reject the mission team")
         .addStringOption((option) =>
             option
                 .setName("vote")
-                .setDescription("approve or reject")
-                .setRequired(false),
+                .setDescription("Approve or reject")
+                .addChoices(
+                    { name: "Approve", value: "approve" },
+                    { name: "Reject", value: "reject" },
+                )
+                .setRequired(true),
         ),
 
     async execute(interaction: ChatInputCommandInteraction, client: Client) {
-        const game = client.gameRegistry.getGame(interaction.channelId);
-
-        if (!game?.started || game.lobby.isBotLobby) {
+        const access = findActiveGame(client, interaction.channelId, "player");
+        if (!access.success) {
             return interaction.reply({
-                content: "No started human game exists in this channel.",
+                content: "No active player-run game exists in this channel.",
                 flags: MessageFlags.Ephemeral,
             });
         }
+        const { game } = access;
 
         if (game.phase !== "VOTING") {
             return interaction.reply({
@@ -58,62 +53,32 @@ export default {
         }
 
         const missionManager = new MissionManager(game);
-        const mode = interaction.options.getString("mode", true);
+        const vote = parseVoteValue(
+            interaction.options.getString("vote", true),
+        );
+        if (!vote) {
+            return interaction.reply({
+                content: "Vote must be approve or reject.",
+                flags: MessageFlags.Ephemeral,
+            });
+        }
 
-        if (mode === "manual") {
-            const voteInput = interaction.options.getString("vote");
-
-            if (!voteInput) {
-                return interaction.reply({
-                    content: "Provide approve or reject.",
-                    flags: MessageFlags.Ephemeral,
-                });
-            }
-
-            const vote = parseVoteValue(voteInput);
-
-            if (!vote) {
-                return interaction.reply({
-                    content: "Vote must be approve or reject.",
-                    flags: MessageFlags.Ephemeral,
-                });
-            }
-
-            const voteResult = missionManager.castExpeditionVote(
-                interaction.user.id,
-                vote,
-            );
-            if (!voteResult.success) {
-                return interaction.reply({
-                    content: "Only players in this game can vote.",
-                    flags: MessageFlags.Ephemeral,
-                });
-            }
-        } else {
-            const vote = Math.random() < 0.5 ? "approve" : "reject";
-            const voteResult = missionManager.castExpeditionVote(
-                interaction.user.id,
-                vote,
-            );
-            if (!voteResult.success) {
-                return interaction.reply({
-                    content: "Only players in this game can vote.",
-                    flags: MessageFlags.Ephemeral,
-                });
-            }
+        const voteResult = missionManager.castExpeditionVote(
+            interaction.user.id,
+            vote,
+        );
+        if (!voteResult.success) {
+            return interaction.reply({
+                content: "Only players in this game can vote.",
+                flags: MessageFlags.Ephemeral,
+            });
         }
 
         if (
             game.timerSettings.skipTimerWhenReady &&
             missionManager.allPlayersVoted()
         ) {
-            if (missionManager.approvalPassed()) {
-                missionManager.beginMission();
-            } else {
-                missionManager.rotateLeader();
-                missionManager.beginPlanning();
-            }
-            scheduleMissionTimer(client, game);
+            new MissionCoordinator(client, game).resolveApproval();
         }
 
         await refreshMissionMessage(interaction, game);

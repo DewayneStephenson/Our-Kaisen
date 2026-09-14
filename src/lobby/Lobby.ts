@@ -1,6 +1,7 @@
 import type { Message } from "discord.js";
 import type { RoleKey } from "../lobby/LobbyRoleManager.js";
 import type { TimerSettings } from "../types/game.js";
+import { DEFAULT_TIMER_SETTINGS } from "../utils/constants.js";
 
 export default class Lobby {
     channelId: string;
@@ -23,16 +24,7 @@ export default class Lobby {
         this.humanNames = new Map();
         this.settings = "lobby";
         this.title = null;
-        this.timerSettings = {
-            missionSelectionSeconds: 30,
-            votingSeconds: 60,
-            missionSeconds: 30,
-            sealingSeconds: 30,
-            actionTimeSeconds: 5,
-            phaseMuteEnabled: true,
-            phaseChatLockEnabled: true,
-            skipTimerWhenReady: false,
-        };
+        this.timerSettings = { ...DEFAULT_TIMER_SETTINGS };
         this.roles = []; // now stores role KEYS
         this.host = null;
     }

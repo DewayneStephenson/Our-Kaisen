@@ -6,8 +6,9 @@ import {
 } from "discord.js";
 import MissionManager from "../../../../game/managers/MissionManager.js";
 import type Player from "../../../../game/Player.js";
+import { findActiveGame } from "../../../../game/services/GameAccess.js";
+import MissionCoordinator from "../../../../game/services/MissionCoordinator.js";
 import { refreshMissionMessage } from "../../../../utils/missionDebug.js";
-import { scheduleMissionTimer } from "../../../../utils/missionTimers.js";
 
 function parseTokens(input: string) {
     return input
@@ -19,84 +20,53 @@ function parseTokens(input: string) {
 export default {
     data: new SlashCommandBuilder()
         .setName("select_mission_plan")
-        .setDescription("Select the mission plan for the human game")
-        .addStringOption((option) =>
-            option
-                .setName("mode")
-                .setDescription("Choose randomly or manually")
-                .addChoices(
-                    { name: "Random", value: "random" },
-                    { name: "Manual", value: "manual" },
-                )
-                .setRequired(true),
-        )
+        .setDescription("Select the mission team")
         .addStringOption((option) =>
             option
                 .setName("players")
-                .setDescription(
-                    "Comma-separated player names or ids for manual mode",
-                )
-                .setRequired(false),
+                .setDescription("Comma-separated player names or IDs")
+                .setRequired(true),
         ),
 
     async execute(interaction: ChatInputCommandInteraction, client: Client) {
-        const game = client.gameRegistry.getGame(interaction.channelId);
-
-        if (!game?.started || game.lobby.isBotLobby) {
+        const access = findActiveGame(client, interaction.channelId, "player");
+        if (!access.success) {
             return interaction.reply({
-                content: "No started human game exists in this channel.",
+                content: "No active player-run game exists in this channel.",
                 flags: MessageFlags.Ephemeral,
             });
         }
+        const { game } = access;
 
-        if (game.phase !== "PLANNING") {
+        if (game.phase !== "SELECTION") {
             return interaction.reply({
                 content:
-                    "The game must be in mission planning before selecting a team.",
+                    "The game must be in selection before selecting a team.",
                 flags: MessageFlags.Ephemeral,
             });
         }
 
         const missionManager = new MissionManager(game);
-        const mode = interaction.options.getString("mode", true);
         const requiredTeamSize = missionManager.getRequiredTeamSize();
+        const selectedIds: string[] = [];
+        const playerTokens = interaction.options.getString("players", true);
 
-        let selectedIds: string[] = [];
+        for (const token of parseTokens(playerTokens)) {
+            const matchedPlayer = game.players.find(
+                (player: Player) =>
+                    player.discordId.toLowerCase() === token.toLowerCase() ||
+                    player.username.toLowerCase() === token.toLowerCase(),
+            );
 
-        if (mode === "random") {
-            selectedIds = [...game.players]
-                .sort(() => Math.random() - 0.5)
-                .slice(0, requiredTeamSize)
-                .map((player) => player.discordId);
-        } else {
-            const playerTokens = interaction.options.getString("players");
-
-            if (!playerTokens) {
+            if (!matchedPlayer) {
                 return interaction.reply({
-                    content:
-                        "Provide a comma-separated list of player names or ids.",
+                    content: `No player matched "${token}".`,
                     flags: MessageFlags.Ephemeral,
                 });
             }
 
-            for (const token of parseTokens(playerTokens)) {
-                const matchedPlayer = game.players.find(
-                    (player: Player) =>
-                        player.discordId.toLowerCase() ===
-                            token.toLowerCase() ||
-                        player.username.toLowerCase() === token.toLowerCase(),
-                );
-
-                if (!matchedPlayer) {
-                    return interaction.reply({
-                        content: `No player matched "${token}".`,
-                        flags: MessageFlags.Ephemeral,
-                    });
-                }
-
-                if (!selectedIds.includes(matchedPlayer.discordId)) {
-                    selectedIds.push(matchedPlayer.discordId);
-                }
+            if (!selectedIds.includes(matchedPlayer.discordId)) {
+                selectedIds.push(matchedPlayer.discordId);
             }
         }
 
@@ -109,8 +79,7 @@ export default {
 
         missionManager.setExpedition(selectedIds);
         if (game.timerSettings.skipTimerWhenReady) {
-            missionManager.beginVoting();
-            scheduleMissionTimer(client, game);
+            new MissionCoordinator(client, game).beginApproval();
         }
         await refreshMissionMessage(interaction, game);
 

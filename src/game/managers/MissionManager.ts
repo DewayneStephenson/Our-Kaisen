@@ -3,6 +3,23 @@ import type Game from "../Game.js";
 
 export type ExpeditionVote = "approve" | "reject";
 export type MissionVote = "pass" | "fail";
+export type MissionFailureReason =
+    | "not_selection"
+    | "invalid_team_size"
+    | "duplicate_player"
+    | "player_not_found"
+    | "not_voting"
+    | "not_in_game"
+    | "not_in_expedition"
+    | "not_mission"
+    | "sorcerer_cannot_fail"
+    | "not_sealing"
+    | "not_assassin"
+    | "target_not_found";
+
+export type MissionActionResult =
+    | { success: true }
+    | { success: false; reason: MissionFailureReason };
 
 const OFFICIAL_MISSION_TEAM_SIZES: Record<number, number[]> = {
     5: [2, 3, 2, 3, 3],
@@ -89,8 +106,8 @@ export default class MissionManager {
         );
     }
 
-    beginPlanning() {
-        this.game.phase = "PLANNING";
+    beginSelection(): MissionActionResult {
+        this.game.phase = "SELECTION";
         this.game.phaseStage = "discussion";
         this.game.expedition = [];
         this.game.expeditionVotes = {};
@@ -98,21 +115,49 @@ export default class MissionManager {
         return { success: true };
     }
 
-    setExpedition(playerIds: string[]) {
+    setExpedition(playerIds: string[]): MissionActionResult {
+        if (this.game.phase !== "SELECTION") {
+            return { success: false, reason: "not_selection" };
+        }
+        if (playerIds.length !== this.getRequiredTeamSize()) {
+            return { success: false, reason: "invalid_team_size" };
+        }
+        if (new Set(playerIds).size !== playerIds.length) {
+            return { success: false, reason: "duplicate_player" };
+        }
+        if (
+            playerIds.some(
+                (playerId) =>
+                    !this.game.players.some(
+                        (player) => player.discordId === playerId,
+                    ),
+            )
+        ) {
+            return { success: false, reason: "player_not_found" };
+        }
         this.game.expedition = [...playerIds];
         this.game.expeditionVotes = {};
         this.game.missionVotes = {};
         return { success: true };
     }
 
-    beginVoting() {
+    beginVoting(): MissionActionResult {
+        if (this.game.phase !== "SELECTION") {
+            return { success: false, reason: "not_selection" };
+        }
+        if (this.game.expedition.length !== this.getRequiredTeamSize()) {
+            return { success: false, reason: "invalid_team_size" };
+        }
         this.game.phase = "VOTING";
         this.game.phaseStage = "discussion";
         this.game.expeditionVotes = {};
         return { success: true };
     }
 
-    castExpeditionVote(playerId: string, vote: ExpeditionVote) {
+    castExpeditionVote(
+        playerId: string,
+        vote: ExpeditionVote,
+    ): MissionActionResult {
         if (
             !this.game.players.some((player) => player.discordId === playerId)
         ) {
@@ -147,18 +192,24 @@ export default class MissionManager {
         return counts.approve > counts.reject;
     }
 
-    beginMission() {
+    beginMission(): MissionActionResult {
+        if (this.game.phase !== "VOTING") {
+            return { success: false, reason: "not_voting" };
+        }
         this.game.phase = "MISSION";
         this.game.phaseStage = "discussion";
         this.game.missionVotes = {};
         return { success: true };
     }
 
-    startMission() {
+    startMission(): MissionActionResult {
         return this.beginMission();
     }
 
-    castMissionVote(playerId: string, vote: MissionVote) {
+    castMissionVote(playerId: string, vote: MissionVote): MissionActionResult {
+        if (this.game.phase !== "MISSION") {
+            return { success: false, reason: "not_mission" };
+        }
         if (!this.game.expedition.includes(playerId)) {
             return { success: false, reason: "not_in_expedition" };
         }
@@ -265,6 +316,7 @@ export default class MissionManager {
             throw new Error("Mission resolution is already in progress or unavailable.");
         }
         this.game.phaseTransitionInProgress = true;
+        try {
         const fails = Object.values(this.game.missionVotes).filter(
             (vote) => vote === "fail",
         ).length;
@@ -299,7 +351,7 @@ export default class MissionManager {
             this.game.phase = "SEALING";
             this.game.winnerAlignment = "Curse";
         } else {
-            this.game.phase = "PLANNING";
+            this.game.phase = "SELECTION";
         }
 
         const result = {
@@ -312,8 +364,10 @@ export default class MissionManager {
                 votes: this.game.missionVoteResults[missionIndex] ?? [],
             },
         };
-        this.game.phaseTransitionInProgress = false;
         return result;
+        } finally {
+            this.game.phaseTransitionInProgress = false;
+        }
     }
 
     resolve() {

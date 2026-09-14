@@ -1,11 +1,11 @@
+import type { KaisenRole } from "../types/game.js";
+
 export default class LobbyRole {
     key: string;
     name: string;
     alignment: "Sorcerer" | "Curse";
     required: boolean;
-    class: new (
-        ...args: any[]
-    ) => any; // constructor reference
+    class?: new () => KaisenRole;
 
     constructor(
         key: string,
@@ -14,7 +14,7 @@ export default class LobbyRole {
         {
             required = false,
             class: roleClass,
-        }: { required?: boolean; class?: any } = {},
+        }: { required?: boolean; class?: new () => KaisenRole } = {},
     ) {
         this.key = key;
         this.name = name;

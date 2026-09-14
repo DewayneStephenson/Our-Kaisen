@@ -8,6 +8,7 @@ const __dirname = path.dirname(__filename);
 
 // Correct ESM import (Node16 requires .js extension)
 import logger from "./logger.js";
+import { errorMessage } from "./errors.js";
 
 interface Config {
     clientId: string;
@@ -61,8 +62,8 @@ export function validateConfig(): boolean {
 
         logger.info("config/config.json validated successfully");
         return true;
-    } catch (error: any) {
-        logger.error(`Error validating config/config.json: ${error.message}`);
+    } catch (error) {
+        logger.error(`Error validating config/config.json: ${errorMessage(error)}`);
         return false;
     }
 }

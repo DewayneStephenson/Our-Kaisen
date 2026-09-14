@@ -1,4 +1,3 @@
-import { EmbedBuilder } from "discord.js";
 import Lobby from "../lobby/Lobby.js";
 import RoleManager from "../lobby/LobbyRoleManager.js";
 import { generateBotUser } from "../utils/botUser.js";
@@ -20,17 +19,6 @@ export default class LobbyManager {
         lobby.humanNames.set(userID, username);
 
         lobby.roles = RoleManager.DefaultMode(lobby.players.length);
-        lobby.timerSettings = {
-            missionSelectionSeconds: 30,
-            votingSeconds: 60,
-            missionSeconds: 30,
-            sealingSeconds: 30,
-            actionTimeSeconds: 5,
-            phaseMuteEnabled: true,
-            phaseChatLockEnabled: true,
-            skipTimerWhenReady: false,
-        };
-
         this.lobbies.set(channelId, lobby);
 
         lobby.host = userID;
@@ -44,30 +32,6 @@ export default class LobbyManager {
 
     deleteLobby(channelId: string) {
         return this.lobbies.delete(channelId);
-    }
-
-    buildEmbed(channelId: string) {
-        const lobby = this.getLobby(channelId);
-        if (!lobby) return null;
-
-        return new EmbedBuilder().setTitle("Lobby").addFields(
-            {
-                name: `Players (${lobby.players.length})`,
-                value: lobby.players.length
-                    ? lobby.players
-                          .map((id) => lobby.botNames.get(id) ?? `<@${id}>`)
-                          .join("\n")
-                    : "No players yet.",
-            },
-            {
-                name: "Roles",
-                value: lobby.roles.length
-                    ? lobby.roles
-                          .map((r) => RoleManager.ROLES[r].name)
-                          .join(", ")
-                    : "No roles selected.",
-            },
-        );
     }
 
     getUsername(id: string, lobby: Lobby): string {
@@ -118,16 +82,6 @@ export default class LobbyManager {
         }
 
         lobby.roles = RoleManager.DefaultMode(lobby.players.length);
-        lobby.timerSettings = {
-            missionSelectionSeconds: 30,
-            votingSeconds: 60,
-            missionSeconds: 30,
-            sealingSeconds: 30,
-            actionTimeSeconds: 5,
-            phaseMuteEnabled: true,
-            phaseChatLockEnabled: true,
-            skipTimerWhenReady: false,
-        };
         this.lobbies.set(channelId, lobby);
         lobby.host = userId;
         return lobby;

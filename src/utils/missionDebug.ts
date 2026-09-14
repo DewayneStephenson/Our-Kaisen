@@ -4,7 +4,7 @@ import type Player from "../game/Player.js";
 import { EmbedCreator } from "../ui/EmbedCreator.js";
 import {
     buildMissionComponents,
-    buildPlanningComponents,
+    buildSelectionComponents,
     buildSealingComponents,
     buildVotingComponents,
 } from "../ui/MissionComponents.js";
@@ -46,8 +46,8 @@ export function pickRandomPlayers(players: Player[], count: number): Player[] {
 
 export function buildMissionView(game: Game) {
     const components =
-        game.phase === "PLANNING"
-            ? buildPlanningComponents(game)
+        game.phase === "SELECTION"
+            ? buildSelectionComponents(game)
             : game.phase === "VOTING"
               ? buildVotingComponents()
               : game.phase === "MISSION"

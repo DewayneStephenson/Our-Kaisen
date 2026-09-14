@@ -40,8 +40,8 @@ describe("VoteManager", () => {
 
 describe("PhaseManager", () => {
     it("accepts the required phase and rejects a different phase", () => {
-        const manager = new PhaseManager("PLANNING");
-        assert.deepEqual(manager.require("PLANNING"), { success: true });
+        const manager = new PhaseManager("SELECTION");
+        assert.deepEqual(manager.require("SELECTION"), { success: true });
         assert.deepEqual(manager.require("MISSION"), {
             success: false,
             reason: "not_in_mission_phase",

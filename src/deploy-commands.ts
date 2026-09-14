@@ -10,6 +10,7 @@ import { REST } from "@discordjs/rest";
 import { Routes } from "discord-api-types/v10";
 
 import { loadCommandsFromFolder } from "./utils/loadCommands.js";
+import { errorMessage } from "./utils/errors.js";
 import * as logger from "./utils/logger.js";
 
 // Load config.json manually (Node16-safe)
@@ -56,7 +57,7 @@ function promptConfirmation(question: string): Promise<string> {
     });
 }
 
-const commands: any[] = [];
+const commands: unknown[] = [];
 const foldersPath = path.join(__dirname, "commands");
 const loadedCommands = await loadCommandsFromFolder(foldersPath);
 const devCommandsPath = path.join(__dirname, "dev");
@@ -93,13 +94,13 @@ const rest = new REST().setToken(process.env.TOKEN);
             logger.info(
                 `Deploying ${commands.length} global application (/) commands...`,
             );
-            const data: any = await rest.put(
+            const data = await rest.put(
                 Routes.applicationCommands(clientId),
                 { body: commands },
             );
 
             logger.info(
-                `Successfully deployed ${data.length} global commands.`,
+                `Successfully deployed ${Array.isArray(data) ? data.length : commands.length} global commands.`,
             );
             return;
         }
@@ -108,24 +109,33 @@ const rest = new REST().setToken(process.env.TOKEN);
             `Deploying ${commands.length} guild application (/) commands...`,
         );
 
-        const data: any = await rest.put(
+        const data = await rest.put(
             Routes.applicationGuildCommands(clientId, guildId),
             { body: commands },
         );
 
-        logger.info(`Successfully deployed ${data.length} guild commands.`);
-    } catch (error: any) {
-        logger.error(`Failed to deploy commands: ${error.message}`);
-        if (error.response) {
-            logger.error(`HTTP Status: ${error.response.status}`);
-        }
-        if (error.rawError) {
+        logger.info(
+            `Successfully deployed ${Array.isArray(data) ? data.length : commands.length} guild commands.`,
+        );
+    } catch (error) {
+        logger.error(`Failed to deploy commands: ${errorMessage(error)}`);
+        const details =
+            error && typeof error === "object"
+                ? (error as Record<string, unknown>)
+                : {};
+        const response = details.response;
+        if (response && typeof response === "object") {
             logger.error(
-                `Discord API error: ${JSON.stringify(error.rawError)}`,
+                `HTTP Status: ${String((response as Record<string, unknown>).status)}`,
+            );
+        }
+        if (details.rawError) {
+            logger.error(
+                `Discord API error: ${JSON.stringify(details.rawError)}`,
             );
         }
         logger.error(
-            `Deploy error details: ${error.stack ?? String(error)} ${error.cause ? `cause: ${String(error.cause)}` : ""}`,
+            `Deploy error details: ${String(details.stack ?? error)} ${details.cause ? `cause: ${String(details.cause)}` : ""}`,
         );
     }
 })();

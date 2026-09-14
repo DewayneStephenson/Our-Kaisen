@@ -77,6 +77,18 @@ export const ROLES = {
 
 export type RoleKey = keyof typeof ROLES;
 
+type RoleChangeResult =
+    | { success: true; reason: "success"; newRoles: RoleKey[] }
+    | {
+          success: false;
+          reason: "notarole" | "required" | "dupe" | "alignment" | "not_in";
+          currentRoles: RoleKey[];
+      };
+
+export function isRoleKey(value: string): value is RoleKey {
+    return Object.hasOwn(ROLES, value);
+}
+
 function DefaultMode(playerCount: number): RoleKey[] {
     const roles: RoleKey[] = [];
 
@@ -105,7 +117,13 @@ function DefaultMode(playerCount: number): RoleKey[] {
 }
 
 // Note: You do not need to create a new array although i like it for preference sake
-function addRole(currentRoles: RoleKey[], roleName: RoleKey) {
+function addRole(
+    currentRoles: RoleKey[],
+    roleName: string,
+): RoleChangeResult {
+    if (!isRoleKey(roleName)) {
+        return { success: false, reason: "notarole", currentRoles };
+    }
     const role = ROLES[roleName];
 
     if (role.required)
@@ -137,7 +155,13 @@ function addRole(currentRoles: RoleKey[], roleName: RoleKey) {
     return { success: true, reason: "success", newRoles };
 }
 
-function removeRole(currentRoles: RoleKey[], roleName: RoleKey) {
+function removeRole(
+    currentRoles: RoleKey[],
+    roleName: string,
+): RoleChangeResult {
+    if (!isRoleKey(roleName)) {
+        return { success: false, reason: "notarole", currentRoles };
+    }
     const role = ROLES[roleName];
 
     if (role.required)

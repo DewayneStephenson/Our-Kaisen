@@ -2,7 +2,7 @@ import type Player from "../game/Player.js";
 export type GamePhase =
     | "LOBBY"
     | "START"
-    | "PLANNING"
+    | "SELECTION"
     | "VOTING"
     | "MISSION"
     | "SEALING";

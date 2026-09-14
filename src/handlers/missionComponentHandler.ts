@@ -6,18 +6,19 @@ import {
 } from "discord.js";
 import type Game from "../game/Game.js";
 import MissionManager from "../game/managers/MissionManager.js";
+import { findActiveGame } from "../game/services/GameAccess.js";
+import MissionCoordinator from "../game/services/MissionCoordinator.js";
 import type Player from "../game/Player.js";
 import { EmbedCreator } from "../ui/EmbedCreator.js";
 import {
     buildMissionComponents,
-    buildPlanningComponents,
+    buildSelectionComponents,
     buildSealingComponents,
     buildVotingComponents,
 } from "../ui/MissionComponents.js";
 import { postGameLog } from "../utils/gameChannels.js";
 import * as logger from "../utils/logger.js";
 import { publishRoundResult } from "../utils/missionDebug.js";
-import { scheduleMissionTimer } from "../utils/missionTimers.js";
 
 function isGamePlayer(
     game: { players: { discordId: string }[] },
@@ -26,12 +27,19 @@ function isGamePlayer(
     return game.players.some((player) => player.discordId === userId);
 }
 
+function componentsForPhase(game: Game) {
+    if (game.phase === "MISSION") return buildMissionComponents(game);
+    if (game.phase === "SELECTION") return buildSelectionComponents(game);
+    if (game.phase === "SEALING") return buildSealingComponents(game);
+    return buildVotingComponents();
+}
+
 type MissionDecisionInteraction =
     | ButtonInteraction
     | StringSelectMenuInteraction;
 
 async function _logNextLeaderIfPlanning(game: Game) {
-    if (game.phase === "PLANNING") {
+    if (game.phase === "SELECTION") {
         await postGameLog(
             game,
             `🧭 Next expedition leader: <@${new MissionManager(game).getLeader()?.discordId}>.`,
@@ -110,14 +118,14 @@ export async function handleMissionButton(
         });
     }
 
-    const game = client.gameRegistry.getGame(interaction.channelId);
-
-    if (!game?.started) {
+    const access = findActiveGame(client, interaction.channelId);
+    if (!access.success) {
         return interaction.reply({
             content: "No active game exists here.",
             flags: MessageFlags.Ephemeral,
         });
     }
+    const { game } = access;
 
     return handleMissionDecision(
         interaction,
@@ -132,48 +140,56 @@ export async function handleMissionInteraction(
     interaction: StringSelectMenuInteraction,
     client: Client,
 ) {
-    const game = client.gameRegistry.getGame(interaction.channelId);
-
-    if (!game?.started) {
+    const access = findActiveGame(client, interaction.channelId);
+    if (!access.success) {
         return interaction.reply({
             content: "No active game exists here.",
             flags: MessageFlags.Ephemeral,
         });
     }
+    const { game } = access;
 
-    const missionManager = new MissionManager(game);
+    const coordinator = new MissionCoordinator(client, game);
+    const missionManager = coordinator.manager;
 
-    if (interaction.customId === "mission_planning_select") {
+    if (interaction.customId === "mission_selection_select") {
         const leader = missionManager.getLeader();
 
         if (!leader || leader.discordId !== interaction.user.id) {
             return interaction.reply({
-                content: "Only the mission-planning leader can choose the team.",
+                content: "Only the selection leader can choose the team.",
                 flags: MessageFlags.Ephemeral,
             });
         }
 
-        if (game.phase !== "PLANNING") {
+        if (game.phase !== "SELECTION") {
             return interaction.reply({
-                content: "The game is not in the mission-planning phase.",
+                content: "The game is not in the selection phase.",
                 flags: MessageFlags.Ephemeral,
             });
         }
 
+        const selectionResult = missionManager.setExpedition(
+            interaction.values,
+        );
+        if (!selectionResult.success) {
+            return interaction.reply({
+                content: `Invalid mission plan: ${selectionResult.reason.replaceAll("_", " ")}.`,
+                flags: MessageFlags.Ephemeral,
+            });
+        }
         await interaction.deferUpdate();
-        missionManager.setExpedition(interaction.values);
 
         await postGameLog(
             game,
-            `🧭 Mission-planning leader <@${leader.discordId}> selected: ${interaction.values.map((playerId) => `<@${playerId}>`).join(", ")}.`,
+            `🧭 Selection leader <@${leader.discordId}> selected: ${interaction.values.map((playerId) => `<@${playerId}>`).join(", ")}.`,
         );
 
         if (
             game.timerSettings.skipTimerWhenReady &&
             interaction.values.length === missionManager.getRequiredTeamSize()
         ) {
-            missionManager.beginVoting();
-            scheduleMissionTimer(client, game);
+            coordinator.beginApproval();
             await postGameLog(
                 game,
                 `🧭 Mission plan submitted early; approval voting has started.`,
@@ -182,10 +198,7 @@ export async function handleMissionInteraction(
 
         return interaction.editReply({
             embeds: [EmbedCreator.mission(game)],
-            components:
-                game.phase === "VOTING"
-                    ? buildVotingComponents()
-                    : buildPlanningComponents(game),
+            components: componentsForPhase(game),
         });
     }
 
@@ -205,8 +218,23 @@ export async function handleMissionInteraction(
         }
 
         await interaction.deferUpdate();
-        const vote = interaction.values[0] as "approve" | "reject";
-        missionManager.castExpeditionVote(interaction.user.id, vote);
+        const vote = interaction.values[0];
+        if (vote !== "approve" && vote !== "reject") {
+            return interaction.editReply({
+                content: "Unknown mission vote.",
+                components: [],
+            });
+        }
+        const voteResult = missionManager.castExpeditionVote(
+            interaction.user.id,
+            vote,
+        );
+        if (!voteResult.success) {
+            return interaction.editReply({
+                content: `Could not record vote: ${voteResult.reason.replaceAll("_", " ")}.`,
+                components: [],
+            });
+        }
         await postGameLog(
             game,
             `🗳️ <@${interaction.user.id}> voted **${vote}** on the mission plan.`,
@@ -216,28 +244,20 @@ export async function handleMissionInteraction(
             game.timerSettings.skipTimerWhenReady &&
             missionManager.allPlayersVoted()
         ) {
-            if (missionManager.approvalPassed()) {
-                missionManager.beginMission();
+            const result = coordinator.resolveApproval();
+            if (result.success && result.outcome.approvalPassed) {
                 await postGameLog(game, "🗳️ Mission plan approved early.");
             } else {
-                missionManager.rotateLeader();
-                missionManager.beginPlanning();
                 await postGameLog(
                     game,
                     `🗳️ Mission plan rejected early. Next leader: <@${missionManager.getLeader()?.discordId}>.`,
                 );
             }
-            scheduleMissionTimer(client, game);
         }
 
         return interaction.editReply({
             embeds: [EmbedCreator.mission(game)],
-            components:
-                game.phase === "MISSION"
-                    ? buildMissionComponents(game)
-                    : game.phase === "PLANNING"
-                      ? buildPlanningComponents(game)
-                      : buildVotingComponents(),
+            components: componentsForPhase(game),
         });
     }
 
@@ -334,7 +354,7 @@ export async function handleMissionInteraction(
             });
         }
 
-        const result = missionManager.resolveSealingTarget(
+        const result = coordinator.resolveSealing(
             interaction.user.id,
             interaction.values[0],
         );
@@ -346,7 +366,6 @@ export async function handleMissionInteraction(
             });
         }
 
-        scheduleMissionTimer(client, game);
         await interaction.deferUpdate();
         await postGameLog(
             game,

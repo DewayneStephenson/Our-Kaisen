@@ -5,13 +5,13 @@ import {
     PermissionFlagsBits,
     SlashCommandBuilder,
 } from "discord.js";
-import MissionManager from "../../game/managers/MissionManager.js";
+import { findActiveGame } from "../../game/services/GameAccess.js";
+import MissionCoordinator from "../../game/services/MissionCoordinator.js";
 import {
     findPlayerByToken,
     publishRoundResult,
     refreshMissionMessage,
 } from "../../utils/missionDebug.js";
-import { scheduleMissionTimer } from "../../utils/missionTimers.js";
 
 export default {
     permissions: [PermissionFlagsBits.Administrator],
@@ -37,14 +37,18 @@ export default {
         ),
 
     async execute(interaction: ChatInputCommandInteraction, client: Client) {
-        const game = client.gameRegistry.getGame(interaction.channelId);
-
-        if (!game?.started || !game.lobby.isBotLobby) {
+        const access = findActiveGame(
+            client,
+            interaction.channelId,
+            "automated",
+        );
+        if (!access.success) {
             return interaction.reply({
                 content: "No started bot game exists in this channel.",
                 flags: MessageFlags.Ephemeral,
             });
         }
+        const { game } = access;
 
         if (
             game.phase !== "SEALING" ||
@@ -72,7 +76,7 @@ export default {
             });
         }
 
-        const result = new MissionManager(game).resolveSealingTarget(
+        const result = new MissionCoordinator(client, game).resolveSealing(
             game.sealingAssassinId,
             target.discordId,
         );
@@ -84,7 +88,6 @@ export default {
             });
         }
 
-        scheduleMissionTimer(client, game);
         await refreshMissionMessage(interaction, game);
         await publishRoundResult(game);
 

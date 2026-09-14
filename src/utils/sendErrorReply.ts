@@ -6,6 +6,7 @@ import type {
 } from "discord.js";
 import { MessageFlags } from "discord.js";
 import * as logger from "./logger.js";
+import { errorMessage } from "./errors.js";
 
 /**
  * Sends an error reply to an interaction.
@@ -26,8 +27,8 @@ export async function sendErrorReply(
         }
 
         return interaction.reply(reply);
-    } catch (err: any) {
-        logger.error(`Failed to send error reply: ${err.message}`);
+    } catch (error) {
+        logger.error(`Failed to send error reply: ${errorMessage(error)}`);
     }
 }
 

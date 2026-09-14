@@ -4,7 +4,7 @@ import {
     MessageFlags,
     SlashCommandBuilder,
 } from "discord.js";
-import RoleManager, { type RoleKey } from "../../../lobby/LobbyRoleManager.js";
+import RoleManager from "../../../lobby/LobbyRoleManager.js";
 import { EmbedCreator } from "../../../ui/EmbedCreator.js";
 
 export default {
@@ -34,7 +34,7 @@ export default {
             });
         }
 
-        const roleName = interaction.options.getString("role", true) as RoleKey;
+        const roleName = interaction.options.getString("role", true);
         const result = RoleManager.removeRole(lobby.roles, roleName);
 
         if (!result.success) {
