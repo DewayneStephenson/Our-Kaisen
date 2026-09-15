@@ -1,6 +1,103 @@
 # Our Kaisen
 
-A TypeScript Discord bot for running social-deduction games inspired by Jujutsu Kaisen.
+**Version 1.0.0-beta.1**
+
+Our Kaisen is a Discord social-deduction game inspired by *The Resistance:
+Avalon* and the discontinued Warriors v Soldiers bot.
+
+Players are divided into two teams: **Sorcerers** and **Curses**. They compete
+across five missions in a best-of-five contest. The first team to get three
+mission results gains the advantage, but even three successful missions may not
+guarantee a Sorcerer victory.
+
+## How to Play
+
+Each round, one player becomes the mission leader and selects a team to
+participate in the mission. Everyone then votes to approve or reject the proposed
+team.
+
+- If the team is rejected, leadership passes to the next player and the selection
+  phase begins again.
+- If the team is approved, the selected players proceed to the mission phase.
+- Sorcerers can only vote to succeed a mission.
+- Curses can vote to either succeed or fail a mission.
+
+The game continues until three missions succeed or three missions fail.
+
+- If three missions fail, the Curses win.
+- If three missions succeed, the Curses have one opportunity to identify and seal
+  the Honored One.
+- If the Honored One is sealed, the Curses steal the victory.
+- If the Curses choose incorrectly, the Sorcerers win.
+
+## Base Roles
+
+### Sorcerers
+
+**Grade 2 Sorcerer**
+
+A standard Sorcerer with no special abilities.
+
+**Honored One**
+
+Knows the identities of the visible Curses but must avoid revealing their own
+identity. After three successful missions, the Curses may attempt to seal the
+Honored One and steal the victory.
+
+### Curses
+
+**Finger Bearer**
+
+A standard Curse with no special abilities.
+
+## Optional Roles
+
+Our Kaisen includes seven optional roles that can be added to customize the game.
+
+### Sorcerer Roles
+
+**Nail and Hammer**
+
+Once per game, marks a player during the mission phase. If that player fails the
+mission, their identity is revealed to the entire lobby. Nothing happens if the
+marked player succeeds the mission.
+
+**Cursed Child**
+
+Knows the identity of the Honored One. Their goal is to protect the Honored One
+from being sealed, often by pretending to be the Honored One themselves.
+
+**Grade 4 Sorcerer**
+
+A debuff role that appears to the Honored One as a member of the Curses.
+
+### Curse Roles
+
+**Stitched Face**
+
+Hidden from the Honored One.
+
+**Cursed Sorcerer**
+
+Appears to the Cursed Child as another possible Honored One.
+
+**Energyless**
+
+Hidden from the other Curses and does not know their identities.
+
+**Fly Head**
+
+Can fail a mission only once per game.
+
+## Features
+
+- Three base roles and seven optional roles
+- Five-mission social-deduction gameplay
+- Configurable role selections and game settings
+- Mission-team selection and approval voting
+- Mission success and failure voting
+- Leader rotation and phase timers
+- Support for up to 15 players
 
 ## Requirements
 
